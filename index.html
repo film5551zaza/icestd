@@ -123,7 +123,6 @@
 
     <!-- ================= หน้าหลัก (เลือกเมนู) ================= -->
     <div id="screen-menu" class="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 relative">
-        <!-- ปุ่มเข้าระบบครู -->
         <button onclick="showTeacherLogin()" class="absolute top-6 right-6 text-gray-500 hover:text-blue-700 bg-white/80 backdrop-blur px-5 py-2.5 rounded-xl shadow-sm border border-gray-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
             🔒 ระบบครูผู้สอน
         </button>
@@ -358,13 +357,11 @@
             const user = document.getElementById('teacher-user').value;
             const pass = document.getElementById('teacher-pass').value;
             
-            // เช็ครหัสผ่านตามเงื่อนไข (staff / 47000)
             if (user === 'staff' && pass === '47000') {
                 closeTeacherLogin();
                 document.getElementById('screen-menu').classList.add('hidden-screen');
                 document.getElementById('screen-teacher-dashboard').classList.remove('hidden-screen');
                 
-                // โหลด Config ที่เคยบันทึกไว้มาแสดงในกล่อง
                 const savedConfig = localStorage.getItem('customFirebaseConfig');
                 if(savedConfig) {
                     document.getElementById('firebase-config-input').value = savedConfig;
@@ -425,12 +422,12 @@
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
-                showModal("คัดลอกแล้ว!", `นำคำว่า "${text}" ไปวางในบล็อคได้เลย (ห้ามพิมพ์ผิดนะ!)`, "📋", "bg-green-500", "bg-green-600");
+                showModal("คัดลอกแล้ว!", `นำคำว่า "${text}" ไปวางในบล็อคได้เลย (ห้ามพิมพ์ผิดนะ!)`, "📋", "bg-green-500");
             }).catch(err => {
                 const tempInput = document.createElement("input");
                 tempInput.value = text;
                 document.body.appendChild(tempInput); tempInput.select(); document.execCommand("copy"); document.body.removeChild(tempInput);
-                showModal("คัดลอกแล้ว!", `นำคำว่า "${text}" ไปวางในบล็อคได้เลย`, "📋", "bg-green-500", "bg-green-600");
+                showModal("คัดลอกแล้ว!", `นำคำว่า "${text}" ไปวางในบล็อคได้เลย`, "📋", "bg-green-500");
             });
         }
 
@@ -734,7 +731,7 @@
             }
         }
 
-        // 2. ใช้ Config ของโรงเรียนที่กำหนดไว้เป็นค่าเริ่มต้นเสมอ (ฝังไว้ในโค้ดตามที่คุณส่งมา)
+        // 2. ใช้ Config ของโรงเรียนที่กำหนดไว้เป็นค่าเริ่มต้นเสมอ
         if (!customConfigObj) {
             customConfigObj = {
                 apiKey: "AIzaSyCHbo50NB_mMykzafOIl6El88Q_TmG7h1w",
@@ -758,17 +755,37 @@
                 window.statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'statistics', 'global');
 
                 const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
+                    try {
+                        let isSystemDefaultDb = false;
+                        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                            try {
+                                const systemConfig = JSON.parse(__firebase_config);
+                                if (systemConfig.projectId === customConfigObj.projectId) {
+                                    isSystemDefaultDb = true;
+                                }
+                            } catch (e) {}
+                        }
+
+                        if (isSystemDefaultDb && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.warn("Firebase Auth Error:", error);
+                        // ถ้าติด Error แสดงว่าไม่ได้เปิดใช้ Anonymous ใน Firebase ระบบจะแสดงข้อความเตือนให้ครูทราบ
+                        const visitEl = document.getElementById('stat-visits');
+                        if(visitEl) visitEl.innerHTML = "<span class='text-lg text-red-500'>⚠️ Error</span>";
+                        const successEl = document.getElementById('stat-success');
+                        if(successEl) successEl.innerHTML = "<span class='text-sm text-red-500 font-bold'>กรุณาเปิด 'Anonymous' Auth<br>ใน Firebase Console</span>";
                     }
                 };
+                
                 initAuth();
 
                 onAuthStateChanged(auth, async (user) => {
-                    currentUser = user;
                     if (!user) return;
+                    currentUser = user;
 
                     // บวกยอด View 1 ครั้งต่อการโหลด
                     if (!sessionStorage.getItem('visited')) {
@@ -786,8 +803,8 @@
                             const data = docSnap.data();
                             const visitEl = document.getElementById('stat-visits');
                             const successEl = document.getElementById('stat-success');
-                            if (visitEl) visitEl.innerText = data.totalVisits || 0;
-                            if (successEl) successEl.innerText = data.totalSuccesses || 0;
+                            if (visitEl && visitEl.innerText !== "⚠️ Error") visitEl.innerText = data.totalVisits || 0;
+                            if (successEl && !successEl.innerHTML.includes("Anonymous")) successEl.innerText = data.totalSuccesses || 0;
                         }
                     }, (error) => { console.error("Realtime data error:", error); });
                 });
