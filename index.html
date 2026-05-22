@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,34 +31,28 @@
             pointer-events: none; z-index: 10; overflow: visible;
         }
         
-        /* สไตล์เส้นใหม่ (แบบมี Hitbox จับการคลิกและดัด) */
         .connection-line {
             fill: none; stroke: #4b5563; stroke-width: 4;
-            pointer-events: none; /* ให้ Hitbox ด้านล่างรับ Event แทน */
-            transition: stroke 0.2s;
+            pointer-events: none; transition: stroke 0.2s;
         }
         .connection-hitbox {
-            fill: none; stroke: transparent; stroke-width: 25; /* เส้นล่องหนกว้าง 25px ให้คลิกง่าย */
+            fill: none; stroke: transparent; stroke-width: 25; 
             pointer-events: auto; cursor: pointer;
         }
-        /* เมื่อชี้ Hitbox ให้เส้นจริงเปลี่ยนสีเป็นสีแดง(พร้อมลบ) */
         .connection-hitbox:hover + .connection-line {
             stroke: #ef4444; stroke-width: 6;
         }
         
-        /* จุดสำหรับดัดเส้น (Drag Handle) */
         .connection-handle {
             fill: #3b82f6; stroke: #ffffff; stroke-width: 2.5;
             cursor: grab; opacity: 0; transition: opacity 0.2s, stroke-width 0.1s;
             pointer-events: auto;
         }
-        /* โชว์จุดเมื่อชี้ที่กลุ่มเส้น หรือกำลังดึงเส้นอยู่ */
         .connection-group:hover .connection-handle,
         .connection-handle.dragging { opacity: 1; }
-        .connection-handle:hover { stroke-width: 7; } /* เปลี่ยนจากขยายขนาด เป็นเพิ่มความหนาขอบแทน แก้ปัญหาสั่น */
+        .connection-handle:hover { stroke-width: 7; } 
         .connection-handle:active { cursor: grabbing; }
         
-        /* สไตล์เส้นตอนลากผิด (Error) */
         .connection-line.error-line {
             stroke: #ef4444 !important;
             stroke-width: 6 !important;
@@ -94,13 +89,10 @@
         
         .port-in { top: -7px; left: 50%; transform: translateX(-50%); border-color: #9ca3af; } 
         .port-in:hover { transform: translateX(-50%) scale(1.3); }
-
         .port-out { bottom: -7px; left: 50%; transform: translateX(-50%); border-color: #3b82f6; } 
         .port-out:hover { transform: translateX(-50%) scale(1.3); }
-
         .port-out-yes { bottom: -7px; left: 50%; transform: translateX(-50%); border-color: #10b981; }
         .port-out-yes:hover { transform: translateX(-50%) scale(1.3); }
-
         .port-out-no { right: -7px; top: 50%; transform: translateY(-50%); border-color: #ef4444; }
         .port-out-no:hover { transform: translateY(-50%) scale(1.3); }
 
@@ -129,7 +121,13 @@
 </head>
 <body class="h-screen w-screen flex flex-col text-gray-800">
 
-    <div id="screen-menu" class="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <!-- ================= หน้าหลัก (เลือกเมนู) ================= -->
+    <div id="screen-menu" class="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 relative">
+        <!-- ปุ่มเข้าระบบครู -->
+        <button onclick="showTeacherLogin()" class="absolute top-6 right-6 text-gray-500 hover:text-blue-700 bg-white/80 backdrop-blur px-5 py-2.5 rounded-xl shadow-sm border border-gray-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
+            🔒 ระบบครูผู้สอน
+        </button>
+
         <div class="bg-white p-10 rounded-3xl shadow-xl text-center max-w-2xl w-full">
             <h1 class="text-4xl font-bold text-blue-600 mb-4">👨‍🍳 สนุกกับ Flowchart ทำอาหาร!</h1>
             <p class="text-gray-500 mb-8 text-lg">มาฝึกคิดอย่างเป็นขั้นตอน พร้อมระบบตรวจคำตอบอัจฉริยะ</p>
@@ -148,6 +146,48 @@
         </div>
     </div>
 
+    <!-- ================= หน้าแผงควบคุมสำหรับครู ================= -->
+    <div id="screen-teacher-dashboard" class="hidden-screen flex-1 flex flex-col items-center justify-center bg-gray-100 p-6 relative">
+        <button onclick="closeTeacherDashboard()" class="absolute top-6 left-6 text-gray-600 hover:text-blue-700 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-gray-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
+            ⬅️ กลับหน้าหลัก
+        </button>
+
+        <div class="bg-white p-10 rounded-3xl shadow-xl max-w-3xl w-full text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 แผงควบคุมสำหรับครูผู้สอน</h1>
+            <p class="text-gray-500 mb-8">ตรวจสอบสถิติการใช้งาน และตั้งค่าฐานข้อมูล Firebase</p>
+
+            <!-- แถบแสดงสถิติ -->
+            <div class="flex justify-center gap-12 bg-blue-50 py-6 px-8 rounded-2xl border border-blue-100 shadow-inner mb-8">
+                <div class="text-center">
+                    <div class="text-5xl font-bold text-blue-600" id="stat-visits">-</div>
+                    <div class="text-gray-600 font-medium mt-2">จำนวนการเข้าใช้งาน (ครั้ง)</div>
+                </div>
+                <div class="w-px bg-blue-200"></div>
+                <div class="text-center">
+                    <div class="text-5xl font-bold text-green-500" id="stat-success">-</div>
+                    <div class="text-gray-600 font-medium mt-2">ทำถูกต้องสำเร็จ (คน)</div>
+                </div>
+            </div>
+
+            <!-- ตั้งค่า Firebase -->
+            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-left">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">⚙️ ตั้งค่าฐานข้อมูล (Firebase Config)</h3>
+                <p class="text-sm text-gray-500 mb-4">ตอนนี้ระบบได้ทำการฝังโค้ด Firebase ของคุณ <b>(icestd-28222)</b> ไว้ให้เป็นค่าเริ่มต้นแล้ว หากต้องการเปลี่ยนฐานข้อมูลใหม่ สามารถวางโค้ดทับที่นี่ได้เลยครับ</p>
+                <textarea id="firebase-config-input" class="w-full h-32 p-4 border rounded-xl font-mono text-sm bg-white shadow-inner focus:ring-2 focus:ring-blue-500 outline-none" placeholder="โค้ดถูกฝังในระบบแล้ว... หากต้องการเปลี่ยนให้วางโค้ดใหม่ที่นี่"></textarea>
+                
+                <div class="mt-4 flex gap-3">
+                    <button onclick="saveCustomFirebase()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition">
+                        💾 บันทึกและรีสตาร์ทระบบ
+                    </button>
+                    <button onclick="clearCustomFirebase()" class="bg-white hover:bg-red-50 text-red-500 border border-red-200 px-6 py-2.5 rounded-xl font-bold transition">
+                        🗑️ ลบการตั้งค่า
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= กระดานทำงาน (Workspace) ================= -->
     <div id="screen-workspace" class="hidden-screen flex-1 flex flex-col h-full">
         <div class="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm z-50 shrink-0">
             <div class="flex items-center gap-4">
@@ -183,7 +223,6 @@
                     <p class="text-xs text-red-500 mb-3 font-semibold">* ต้องใช้คำศัพท์ทุกคำให้ครบ และห้ามใช้ซ้ำ!</p>
                     <div id="vocab-list" class="flex flex-col gap-2"></div>
                 </div>
-                <!-- คำใบ้ฟีเจอร์ดัดเส้น -->
                 <div class="p-3 bg-blue-50 border-t text-xs text-blue-700 rounded-b-lg">
                     💡 <b>เคล็ดลับ:</b> ชี้ที่เส้นแล้วลาก <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mx-1"></span> เพื่อดัดเส้นให้หลบกัน (ดับเบิ้ลคลิกเพื่อรีเซ็ตเส้น)
                 </div>
@@ -216,7 +255,29 @@
         </div>
     </div>
 
-    <!-- Modal แจ้งเตือน -->
+    <!-- ================= Modal ยืนยันตัวตนครู ================= -->
+    <div id="teacher-login-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white p-8 rounded-3xl max-w-sm w-full mx-4 shadow-2xl text-center">
+            <div class="text-5xl mb-4">🔐</div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-6">เข้าสู่ระบบครูผู้สอน</h3>
+            <div class="flex flex-col gap-4 text-left">
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">Username</label>
+                    <input type="text" id="teacher-user" class="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="ระบุชื่อผู้ใช้">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">Password</label>
+                    <input type="password" id="teacher-pass" class="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="ระบุรหัสผ่าน">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="submitTeacherLogin()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition">เข้าสู่ระบบ</button>
+                <button onclick="closeTeacherLogin()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold transition">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal แจ้งเตือนทั่วไป ================= -->
     <div id="custom-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
         <div class="bg-white p-8 rounded-3xl max-w-md w-full mx-4 text-center shadow-2xl transform transition-transform scale-95" id="modal-box">
             <div id="modal-icon" class="text-6xl mb-4">⚠️</div>
@@ -227,7 +288,7 @@
     </div>
 
     <script>
-        // ================= ข้อมูลโจทย์ & กฎการเชื่อมต่อที่ถูกต้อง =================
+        // ================= ข้อมูลโจทย์ =================
         const menus = {
             friedEgg: {
                 title: "🍳 ทอดไข่ดาว",
@@ -271,20 +332,72 @@
             }
         };
 
-        // ================= ตัวแปรระบบ =================
         let activeMenu = null;
         let blockCounter = 0;
-        
         const canvasContainer = document.getElementById('canvas-container');
         const workspace = document.getElementById('workspace');
         let scale = 1, panX = 0, panY = 0;
         let isPanning = false, startPanX = 0, startPanY = 0;
         let draggedNode = null, nodeOffsetX = 0, nodeOffsetY = 0;
-        
         const svgLayer = document.getElementById('svg-layer');
         let connections = []; 
-        let isWiring = false, wiringStartPort = null, tempPath = null;
-        let draggedHandleConn = null; // เก็บตัวแปรของเส้นที่กำลังถูกผู้ใช้ดัด
+        let isWiring = false, wiringStartPort = null, tempPath = null, draggedHandleConn = null;
+
+        // ================= ฟังก์ชันระบบครูผู้สอน =================
+        window.showTeacherLogin = () => {
+            document.getElementById('teacher-user').value = '';
+            document.getElementById('teacher-pass').value = '';
+            document.getElementById('teacher-login-modal').classList.remove('hidden');
+        };
+
+        window.closeTeacherLogin = () => {
+            document.getElementById('teacher-login-modal').classList.add('hidden');
+        };
+
+        window.submitTeacherLogin = () => {
+            const user = document.getElementById('teacher-user').value;
+            const pass = document.getElementById('teacher-pass').value;
+            
+            // เช็ครหัสผ่านตามเงื่อนไข (staff / 47000)
+            if (user === 'staff' && pass === '47000') {
+                closeTeacherLogin();
+                document.getElementById('screen-menu').classList.add('hidden-screen');
+                document.getElementById('screen-teacher-dashboard').classList.remove('hidden-screen');
+                
+                // โหลด Config ที่เคยบันทึกไว้มาแสดงในกล่อง
+                const savedConfig = localStorage.getItem('customFirebaseConfig');
+                if(savedConfig) {
+                    document.getElementById('firebase-config-input').value = savedConfig;
+                }
+            } else {
+                alert('⚠️ ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง!');
+            }
+        };
+
+        window.closeTeacherDashboard = () => {
+            document.getElementById('screen-teacher-dashboard').classList.add('hidden-screen');
+            document.getElementById('screen-menu').classList.remove('hidden-screen');
+        };
+
+        window.saveCustomFirebase = () => {
+            const configCode = document.getElementById('firebase-config-input').value.trim();
+            if(configCode) {
+                localStorage.setItem('customFirebaseConfig', configCode);
+                alert('✅ บันทึกโค้ด Firebase เรียบร้อยแล้ว ระบบจะทำการรีโหลดเพื่อใช้งานฐานข้อมูลใหม่');
+                location.reload();
+            } else {
+                alert('กรุณาวางโค้ดก่อนบันทึกครับ');
+            }
+        };
+
+        window.clearCustomFirebase = () => {
+            if(confirm('แน่ใจหรือไม่ว่าต้องการลบการตั้งค่า? (ระบบจะกลับไปใช้ฐานข้อมูลเริ่มต้น)')) {
+                localStorage.removeItem('customFirebaseConfig');
+                document.getElementById('firebase-config-input').value = '';
+                alert('🗑️ ลบการตั้งค่าเรียบร้อย ระบบจะทำการรีโหลด');
+                location.reload();
+            }
+        };
 
         // ================= การจัดการหน้าจอ =================
         function startApp(menuKey) {
@@ -339,54 +452,40 @@
         window.addEventListener('mousemove', (e) => {
             if (isPanning) { panX = e.clientX - startPanX; panY = e.clientY - startPanY; updateTransform(); }
             
-            // ลากบล็อค
             if (draggedNode) {
                 const rect = canvasContainer.getBoundingClientRect();
-                const mouseX = (e.clientX - rect.left - panX) / scale;
-                const mouseY = (e.clientY - rect.top - panY) / scale;
-                draggedNode.style.left = `${mouseX - nodeOffsetX}px`;
-                draggedNode.style.top = `${mouseY - nodeOffsetY}px`;
+                draggedNode.style.left = `${(e.clientX - rect.left - panX) / scale - nodeOffsetX}px`;
+                draggedNode.style.top = `${(e.clientY - rect.top - panY) / scale - nodeOffsetY}px`;
                 updateConnections();
             }
 
-            // ลากเพื่อดัดเส้น (Drag Handle)
             if (draggedHandleConn) {
                 const rect = canvasContainer.getBoundingClientRect();
-                const mouseX = (e.clientX - rect.left - panX) / scale;
-                const mouseY = (e.clientY - rect.top - panY) / scale;
-                draggedHandleConn.customHandle = { x: mouseX, y: mouseY };
+                draggedHandleConn.customHandle = { x: (e.clientX - rect.left - panX) / scale, y: (e.clientY - rect.top - panY) / scale };
                 updateConnections();
             }
 
-            // ลากเส้นเชื่อมต่อแบบชั่วคราว
             if (isWiring && tempPath && wiringStartPort) {
                 const rect = workspace.getBoundingClientRect();
                 const startRect = wiringStartPort.getBoundingClientRect();
-                const startX = (startRect.left + startRect.width/2 - rect.left) / scale;
-                const startY = (startRect.top + startRect.height/2 - rect.top) / scale;
-                const mouseX = (e.clientX - rect.left) / scale;
-                const mouseY = (e.clientY - rect.top) / scale;
-                
-                const curve = getCurvedPath(startX, startY, mouseX, mouseY, wiringStartPort.dataset.type === 'no');
+                const curve = getCurvedPath(
+                    (startRect.left + startRect.width/2 - rect.left) / scale, 
+                    (startRect.top + startRect.height/2 - rect.top) / scale, 
+                    (e.clientX - rect.left) / scale, (e.clientY - rect.top) / scale, 
+                    wiringStartPort.dataset.type === 'no'
+                );
                 tempPath.setAttribute('d', curve.pathString);
             }
         });
 
         window.addEventListener('mouseup', (e) => {
             isPanning = false; draggedNode = null;
-            
-            if (draggedHandleConn) {
-                draggedHandleConn.handleElement.classList.remove('dragging');
-                draggedHandleConn = null;
-            }
-
+            if (draggedHandleConn) { draggedHandleConn.handleElement.classList.remove('dragging'); draggedHandleConn = null; }
             if (isWiring) {
                 const dropTarget = e.target;
                 if (dropTarget.classList.contains('port-in')) {
-                    const fromNode = wiringStartPort.dataset.node;
-                    const fromType = wiringStartPort.dataset.type;
-                    const toNode = dropTarget.dataset.node;
-                    if (fromNode !== toNode) createConnection(fromNode, fromType, toNode);
+                    if (wiringStartPort.dataset.node !== dropTarget.dataset.node) 
+                        createConnection(wiringStartPort.dataset.node, wiringStartPort.dataset.type, dropTarget.dataset.node);
                 }
                 if (tempPath) tempPath.remove();
                 tempPath = null; isWiring = false; wiringStartPort = null;
@@ -394,11 +493,10 @@
             }
         });
 
-        // ================= ระบบบล็อค =================
+        // ================= ระบบบล็อค และ เส้นเชื่อมต่อ =================
         function resetWorkspace() {
             document.querySelectorAll('.fc-node').forEach(el => el.remove());
             document.querySelectorAll('.connection-group').forEach(el => el.remove());
-            document.querySelectorAll('.connection-line').forEach(el => el.remove());
             connections = []; blockCounter = 0; resetZoom();
         }
 
@@ -406,42 +504,19 @@
             blockCounter++;
             const nodeId = `node-${blockCounter}`;
             const node = document.createElement('div');
-            node.className = `fc-node bg-color-1`;
+            node.className = `fc-node bg-color-1 ${type === 'start-end' ? 'fc-start-end' : type === 'process' ? 'fc-process' : 'fc-decision'}`;
             node.id = nodeId; node.dataset.type = type;
 
-            const controlsHtml = `
-                <div class="node-controls">
-                    <div class="control-btn" title="เปลี่ยนสี" onclick="cycleColor('${nodeId}')">🎨</div>
-                    <div class="control-btn text-red-500" title="ลบ" onclick="deleteNode('${nodeId}')">🗑️</div>
-                </div>`;
+            const controlsHtml = `<div class="node-controls"><div class="control-btn" title="เปลี่ยนสี" onclick="cycleColor('${nodeId}')">🎨</div><div class="control-btn text-red-500" title="ลบ" onclick="deleteNode('${nodeId}')">🗑️</div></div>`;
 
-            let html = '';
             if (type === 'start-end') {
-                node.classList.add('fc-start-end');
-                html = `${controlsHtml}
-                    <div class="port port-in" data-node="${nodeId}" data-type="in" title="ทางเข้า"></div>
-                    <div class="port port-out" data-node="${nodeId}" data-type="out" title="ทางออก"></div>
-                    <input type="text" placeholder="เริ่มต้น / สิ้นสุด">`;
+                node.innerHTML = `${controlsHtml}<div class="port port-in" data-node="${nodeId}" data-type="in"></div><div class="port port-out" data-node="${nodeId}" data-type="out"></div><input type="text" placeholder="เริ่มต้น / สิ้นสุด">`;
             } else if (type === 'process') {
-                node.classList.add('fc-process');
-                html = `${controlsHtml}
-                    <div class="port port-in" data-node="${nodeId}" data-type="in" title="ทางเข้า"></div>
-                    <div class="port port-out" data-node="${nodeId}" data-type="out" title="ทางออก"></div>
-                    <input type="text" placeholder="กระบวนการ...">`;
+                node.innerHTML = `${controlsHtml}<div class="port port-in" data-node="${nodeId}" data-type="in"></div><div class="port port-out" data-node="${nodeId}" data-type="out"></div><input type="text" placeholder="กระบวนการ...">`;
             } else if (type === 'decision') {
-                node.classList.add('fc-decision');
-                html = `${controlsHtml}
-                    <div class="port port-in" data-node="${nodeId}" data-type="in" title="ทางเข้า"></div>
-                    <div class="port port-out-yes" data-node="${nodeId}" data-type="yes" title="ใช่ (ไปต่อ)">
-                        <span class="absolute top-4 left-1/2 -translate-x-1/2 text-[#10b981] font-bold text-xs pointer-events-none bg-white/90 px-1 rounded shadow-sm">ใช่</span>
-                    </div>
-                    <div class="port port-out-no" data-node="${nodeId}" data-type="no" title="ไม่ใช่ (วนลูป)">
-                        <span class="absolute -top-5 left-1/2 -translate-x-1/2 text-[#ef4444] font-bold text-xs pointer-events-none bg-white/90 px-1 rounded shadow-sm">ไม่ใช่</span>
-                    </div>
-                    <input type="text" placeholder="เงื่อนไข?">`;
+                node.innerHTML = `${controlsHtml}<div class="port port-in" data-node="${nodeId}" data-type="in"></div><div class="port port-out-yes" data-node="${nodeId}" data-type="yes"><span class="absolute top-4 left-1/2 -translate-x-1/2 text-[#10b981] font-bold text-xs pointer-events-none bg-white/90 px-1 rounded shadow-sm">ใช่</span></div><div class="port port-out-no" data-node="${nodeId}" data-type="no"><span class="absolute -top-5 left-1/2 -translate-x-1/2 text-[#ef4444] font-bold text-xs pointer-events-none bg-white/90 px-1 rounded shadow-sm">ไม่ใช่</span></div><input type="text" placeholder="เงื่อนไข?">`;
             }
 
-            node.innerHTML = html;
             const rect = canvasContainer.getBoundingClientRect();
             node.style.left = `${(rect.width / 2 - panX) / scale - 70}px`;
             node.style.top = `${(rect.height / 2 - panY) / scale - 30}px`;
@@ -449,11 +524,8 @@
             node.addEventListener('mousedown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.classList.contains('port') || e.target.closest('.node-controls')) return;
                 draggedNode = node;
-                const rect = canvasContainer.getBoundingClientRect();
-                const mouseX = (e.clientX - rect.left - panX) / scale;
-                const mouseY = (e.clientY - rect.top - panY) / scale;
-                nodeOffsetX = mouseX - parseFloat(node.style.left || 0);
-                nodeOffsetY = mouseY - parseFloat(node.style.top || 0);
+                nodeOffsetX = ((e.clientX - canvasContainer.getBoundingClientRect().left - panX) / scale) - parseFloat(node.style.left || 0);
+                nodeOffsetY = ((e.clientY - canvasContainer.getBoundingClientRect().top - panY) / scale) - parseFloat(node.style.top || 0);
                 workspace.appendChild(node);
             });
 
@@ -462,7 +534,6 @@
                     e.stopPropagation(); isWiring = true; wiringStartPort = port;
                     tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     tempPath.setAttribute('class', 'connection-line');
-                    tempPath.style.pointerEvents = 'none';
                     svgLayer.appendChild(tempPath);
                     document.getElementById('wiring-hint').style.opacity = '1';
                 });
@@ -486,7 +557,6 @@
             node.classList.replace(currentClass, `bg-color-${nextNum}`);
         }
 
-        // ================= ระบบลากและดัดเส้นอิสระ (Customizable Connections) =================
         function createConnection(fromId, fromType, toId) {
             connections = connections.filter(conn => {
                 if (conn.from === fromId && conn.fromType === fromType) { conn.groupElement.remove(); return false; }
@@ -507,64 +577,32 @@
             handleElement.setAttribute('class', 'connection-handle');
             handleElement.setAttribute('r', '7');
             
-            // ลบเส้นเมื่อคลิกที่ Hitbox (เส้นล่องหนที่กว้างกว่า)
-            hitboxElement.addEventListener('click', () => {
-                groupElement.remove(); 
-                connections = connections.filter(c => c.groupElement !== groupElement);
-            });
-
-            // Hover เพื่อเปลี่ยนสีหัวลูกศร
+            hitboxElement.addEventListener('click', () => { groupElement.remove(); connections = connections.filter(c => c.groupElement !== groupElement); });
             hitboxElement.addEventListener('mouseenter', () => pathElement.setAttribute('marker-end', 'url(#arrow-hover)'));
             hitboxElement.addEventListener('mouseleave', () => pathElement.setAttribute('marker-end', 'url(#arrow)'));
 
             const newConn = { from: fromId, fromType: fromType, to: toId, groupElement, hitboxElement, pathElement, handleElement, customHandle: null };
 
-            // จับลากดัดเส้น
-            handleElement.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                draggedHandleConn = newConn;
-                handleElement.classList.add('dragging');
-            });
+            handleElement.addEventListener('mousedown', (e) => { e.stopPropagation(); draggedHandleConn = newConn; handleElement.classList.add('dragging'); });
+            handleElement.addEventListener('dblclick', (e) => { e.stopPropagation(); newConn.customHandle = null; updateConnections(); });
 
-            // ดับเบิ้ลคลิกเพื่อรีเซ็ตเส้นให้กลับสู่โหมดอัตโนมัติ
-            handleElement.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                newConn.customHandle = null; 
-                updateConnections();
-            });
-
-            groupElement.appendChild(hitboxElement);
-            groupElement.appendChild(pathElement);
-            groupElement.appendChild(handleElement);
+            groupElement.appendChild(hitboxElement); groupElement.appendChild(pathElement); groupElement.appendChild(handleElement);
             svgLayer.appendChild(groupElement);
             
-            connections.push(newConn);
-            updateConnections();
+            connections.push(newConn); updateConnections();
         }
 
-        // คำนวณสมการเส้นโค้ง Bezier อัตโนมัติ (Cubic)
         function getCurvedPath(x1, y1, x2, y2, isSideExit = false) {
             let cp1x, cp1y, cp2x, cp2y;
-            const isLoopingBack = y2 < y1; 
-
-            if (isSideExit) {
-                cp1x = x1 + 80; cp1y = y1;
-                cp2x = x2; cp2y = y2 - 50; 
-            } else if (isLoopingBack) {
-                const isRightSide = x1 >= x2;
-                const offsetX = isRightSide ? 120 : -120;
-                cp1x = x1 + offsetX; cp1y = y1 + 50;  
-                cp2x = x2 + offsetX; cp2y = y2 - 80;  
-            } else {
-                cp1x = x1; cp1y = y1 + Math.abs(y2 - y1) * 0.5;
-                cp2x = x2; cp2y = y2 - Math.abs(y2 - y1) * 0.5;
-            }
-            
-            // ส่งคืน Path และตำแหน่งกึ่งกลางเส้นสำหรับวางจุด Handle
+            if (isSideExit) { cp1x = x1 + 80; cp1y = y1; cp2x = x2; cp2y = y2 - 50; } 
+            else if (y2 < y1) {
+                const offsetX = x1 >= x2 ? 120 : -120;
+                cp1x = x1 + offsetX; cp1y = y1 + 50; cp2x = x2 + offsetX; cp2y = y2 - 80;  
+            } 
+            else { cp1x = x1; cp1y = y1 + Math.abs(y2 - y1) * 0.5; cp2x = x2; cp2y = y2 - Math.abs(y2 - y1) * 0.5; }
             return {
                 pathString: `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`,
-                hx: 0.125 * x1 + 0.375 * cp1x + 0.375 * cp2x + 0.125 * x2,
-                hy: 0.125 * y1 + 0.375 * cp1y + 0.375 * cp2y + 0.125 * y2
+                hx: 0.125 * x1 + 0.375 * cp1x + 0.375 * cp2x + 0.125 * x2, hy: 0.125 * y1 + 0.375 * cp1y + 0.375 * cp2y + 0.125 * y2
             };
         }
 
@@ -573,154 +611,200 @@
             connections.forEach(conn => {
                 const fromNode = document.getElementById(conn.from), toNode = document.getElementById(conn.to);
                 if (!fromNode || !toNode) return;
-
-                let fromPort;
-                if (conn.fromType === 'out') fromPort = fromNode.querySelector('.port-out');
-                else if (conn.fromType === 'yes') fromPort = fromNode.querySelector('.port-out-yes');
-                else if (conn.fromType === 'no') fromPort = fromNode.querySelector('.port-out-no');
                 
+                const fromPort = conn.fromType === 'out' ? fromNode.querySelector('.port-out') : (conn.fromType === 'yes' ? fromNode.querySelector('.port-out-yes') : fromNode.querySelector('.port-out-no'));
                 const toPort = toNode.querySelector('.port-in');
+                
                 if (fromPort && toPort) {
                     const fromRect = fromPort.getBoundingClientRect(), toRect = toPort.getBoundingClientRect();
-                    const startX = (fromRect.left + fromRect.width/2 - rect.left) / scale;
-                    const startY = (fromRect.top + fromRect.height/2 - rect.top) / scale;
-                    const endX = (toRect.left + toRect.width/2 - rect.left) / scale;
-                    const endY = (toRect.top + toRect.height/2 - rect.top) / scale;
+                    const startX = (fromRect.left + fromRect.width/2 - rect.left) / scale, startY = (fromRect.top + fromRect.height/2 - rect.top) / scale;
+                    const endX = (toRect.left + toRect.width/2 - rect.left) / scale, endY = (toRect.top + toRect.height/2 - rect.top) / scale;
 
                     let pathString, hx, hy;
-
-                    // ถ้าผู้ใช้ดัดเส้นเอง ให้ใช้ Quadratic Bezier บังคับจุดศูนย์กลาง
                     if (conn.customHandle) {
-                        hx = conn.customHandle.x;
-                        hy = conn.customHandle.y;
-                        const cx = 2 * hx - 0.5 * startX - 0.5 * endX;
-                        const cy = 2 * hy - 0.5 * startY - 0.5 * endY;
-                        pathString = `M ${startX} ${startY} Q ${cx} ${cy} ${endX} ${endY}`;
+                        hx = conn.customHandle.x; hy = conn.customHandle.y;
+                        pathString = `M ${startX} ${startY} Q ${2 * hx - 0.5 * startX - 0.5 * endX} ${2 * hy - 0.5 * startY - 0.5 * endY} ${endX} ${endY}`;
                     } else {
-                        // ไม่งั้นใช้อัตโนมัติ
                         const curve = getCurvedPath(startX, startY, endX, endY, conn.fromType === 'no');
-                        pathString = curve.pathString;
-                        hx = curve.hx;
-                        hy = curve.hy;
+                        pathString = curve.pathString; hx = curve.hx; hy = curve.hy;
                     }
-
-                    conn.pathElement.setAttribute('d', pathString);
-                    conn.hitboxElement.setAttribute('d', pathString); // ให้เส้นล่องหนขยับตามเส้นจริงด้วย
-                    conn.handleElement.setAttribute('cx', hx);
-                    conn.handleElement.setAttribute('cy', hy);
+                    conn.pathElement.setAttribute('d', pathString); conn.hitboxElement.setAttribute('d', pathString); 
+                    conn.handleElement.setAttribute('cx', hx); conn.handleElement.setAttribute('cy', hy);
                 }
             });
         }
 
-        // ================= ระบบตรวจสอบความถูกต้องขั้นสูง (STRICT VALIDATION) =================
-        function showModal(title, message, icon, btnBg = "bg-blue-500", btnHover = "bg-blue-600") {
+        // ================= ระบบตรวจสอบ =================
+        function showModal(title, message, icon, btnBg = "bg-blue-500") {
             const modal = document.getElementById('custom-modal');
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-message').innerText = message;
             document.getElementById('modal-icon').innerText = icon;
-            document.getElementById('modal-btn').className = `w-full text-white px-6 py-3 rounded-xl font-bold text-lg transition shadow-md ${btnBg} hover:${btnHover}`;
-            
+            document.getElementById('modal-btn').className = `w-full text-white px-6 py-3 rounded-xl font-bold text-lg transition shadow-md ${btnBg}`;
             modal.classList.remove('hidden');
             setTimeout(() => { document.getElementById('modal-box').classList.replace('scale-95', 'scale-100'); }, 10);
         }
-
         function closeModal() {
             document.getElementById('modal-box').classList.replace('scale-100', 'scale-95');
             setTimeout(() => { document.getElementById('custom-modal').classList.add('hidden'); }, 200);
         }
 
         function checkFlowchart() {
-            // ล้าง error ทิ้งก่อน
             document.querySelectorAll('.fc-node').forEach(n => n.classList.remove('error'));
             document.querySelectorAll('.connection-line').forEach(l => l.classList.remove('error-line'));
             
             const nodes = document.querySelectorAll('.fc-node');
-            if (nodes.length === 0) return showModal("ยังไม่ได้เริ่มเลย!", "ลากบล็อคมาวางบนกระดานก่อนนะ", "🤔", "bg-yellow-500", "bg-yellow-600");
+            if (nodes.length === 0) return showModal("ยังไม่ได้เริ่มเลย!", "ลากบล็อคมาวางบนกระดานก่อนนะ", "🤔", "bg-yellow-500");
 
-            const allowedVocab = menus[activeMenu].vocab;
-            const expectedTransitions = menus[activeMenu].transitions;
-            
-            let hasEmptyInput = false, hasInvalidVocab = false;
-            let nodeTexts = [];
+            const allowedVocab = menus[activeMenu].vocab, expectedTransitions = menus[activeMenu].transitions;
+            let hasEmptyInput = false, hasInvalidVocab = false, nodeTexts = [];
 
-            // 1. ตรวจสอบการกรอกคำศัพท์ (ห้ามมั่ว, ห้ามพิมพ์ผิดแม้แต่ตัวเดียว)
             nodes.forEach(node => {
                 const inputVal = node.querySelector('input').value.trim();
-                if(inputVal === "") {
-                    node.classList.add('error'); hasEmptyInput = true;
-                } else {
+                if(inputVal === "") { node.classList.add('error'); hasEmptyInput = true; } 
+                else {
                     nodeTexts.push(inputVal);
-                    if (!allowedVocab.includes(inputVal)) {
-                        node.classList.add('error'); hasInvalidVocab = true;
-                    }
+                    if (!allowedVocab.includes(inputVal)) { node.classList.add('error'); hasInvalidVocab = true; }
                 }
             });
 
             if (hasEmptyInput) return showModal("ลืมเติมคำศัพท์!", "มีบางบล็อคที่ยังไม่ได้พิมพ์ข้อความเลย", "✍️", "bg-yellow-500");
             if (hasInvalidVocab) return showModal("คำศัพท์ไม่ถูกต้อง!", "ต้องก็อปปี้ข้อความจาก 'คลังคำศัพท์' มาวางให้เป๊ะๆ เท่านั้นครับ ระบบถึงจะให้ผ่าน", "🔍", "bg-orange-500");
-            
-            // 2. ตรวจสอบคำซ้ำ (แต่ละคำต้องถูกใช้แค่ 1 ครั้ง)
-            if (new Set(nodeTexts).size !== nodeTexts.length) {
-                return showModal("ห้ามใช้คำซ้ำ!", "คุณใส่ข้อความเดียวกันในหลายบล็อค กรุณาใช้คำศัพท์ 1 คำต่อ 1 บล็อคเท่านั้นครับ", "🚫", "bg-orange-500");
-            }
-
-            // 3. ตรวจสอบจำนวนคำ (ห้ามขาด ห้ามเกิน)
+            if (new Set(nodeTexts).size !== nodeTexts.length) return showModal("ห้ามใช้คำซ้ำ!", "กรุณาใช้คำศัพท์ 1 คำต่อ 1 บล็อคเท่านั้นครับ", "🚫", "bg-orange-500");
             if (nodeTexts.length < allowedVocab.length) return showModal("ใช้บล็อคยังไม่ครบ!", "ดึงคำศัพท์จากฝั่งซ้ายมาใช้ให้ครบทุกขั้นตอนเลยนะ", "🧩", "bg-blue-500");
             if (nodeTexts.length > allowedVocab.length) return showModal("มีบล็อคเกินมา!", "คุณสร้างบล็อคเยอะเกินไป ลองลบอันที่ไม่ใช้ออกนะ", "✂️", "bg-orange-500");
 
-            // 4. ตรวจสอบการลากเส้นเชื่อม (Logic Sequence Check)
             let hasWrongConnection = false;
-
             connections.forEach(conn => {
                 const fromText = document.getElementById(conn.from).querySelector('input').value.trim();
                 const toText = document.getElementById(conn.to).querySelector('input').value.trim();
-                const type = conn.fromType;
-                
-                // เช็คว่าเส้นที่ลากมา มีอยู่ในคู่มือเฉลย (expectedTransitions) หรือไม่
-                const isExpected = expectedTransitions.some(exp => 
-                    exp.from === fromText && exp.to === toText && exp.type === type
-                );
-
-                if (!isExpected) {
-                    conn.pathElement.classList.add('error-line'); // ทำให้เส้นเป็นสีแดงกระพริบ
-                    document.getElementById(conn.from).classList.add('error');
-                    document.getElementById(conn.to).classList.add('error');
+                if (!expectedTransitions.some(exp => exp.from === fromText && exp.to === toText && exp.type === conn.fromType)) {
+                    conn.pathElement.classList.add('error-line'); document.getElementById(conn.from).classList.add('error'); document.getElementById(conn.to).classList.add('error');
                     hasWrongConnection = true;
                 }
             });
 
-            if (hasWrongConnection) return showModal("ลำดับยังไม่ถูกต้อง!", "มีการลากเส้นเชื่อมโยงผิดขั้นตอน ลองทบทวนลำดับใหม่นะ (เส้นประสีแดงคือจุดที่ผิด)", "🔄", "bg-red-500", "bg-red-600");
+            if (hasWrongConnection) return showModal("ลำดับยังไม่ถูกต้อง!", "มีการลากเส้นเชื่อมโยงผิดขั้นตอน (เส้นประสีแดงคือจุดที่ผิด)", "🔄", "bg-red-500");
             
-            // 5. ตรวจสอบว่ามีบล็อคไหนทางขาดหรือไม่ (ทุกบล็อคต้องมีทางออกไปต่อ)
             let hasMissingOutput = false;
             nodes.forEach(node => {
                 const text = node.querySelector('input').value.trim();
                 if (text !== "สิ้นสุด") {
                     if (node.dataset.type === 'decision') {
-                        // บล็อคเงื่อนไขต้องมีทางออกทั้ง 'yes' และ 'no'
-                        const hasYes = connections.some(c => c.from === node.id && c.fromType === 'yes');
-                        const hasNo = connections.some(c => c.from === node.id && c.fromType === 'no');
-                        if (!hasYes || !hasNo) {
-                            node.classList.add('error');
-                            hasMissingOutput = true;
-                        }
+                        if (!connections.some(c => c.from === node.id && c.fromType === 'yes') || !connections.some(c => c.from === node.id && c.fromType === 'no')) { node.classList.add('error'); hasMissingOutput = true; }
                     } else {
-                        // บล็อคปกติทั่วไป ต้องมีทางออก 1 ทาง
-                        const hasOut = connections.some(c => c.from === node.id);
-                        if (!hasOut) {
-                            node.classList.add('error');
-                            hasMissingOutput = true;
-                        }
+                        if (!connections.some(c => c.from === node.id)) { node.classList.add('error'); hasMissingOutput = true; }
                     }
                 }
             });
 
-            if (hasMissingOutput) return showModal("ทางขาด!", "ยังมีบางบล็อคที่ไม่ได้ลากเส้นไปต่อ! (บล็อคเงื่อนไขอย่าลืมลากทั้งเส้น 'ใช่' และ 'ไม่ใช่' นะ)", "🔌", "bg-red-500");
+            if (hasMissingOutput) return showModal("ทางขาด!", "ยังมีบางบล็อคที่ไม่ได้ลากเส้นไปต่อ!", "🔌", "bg-red-500");
 
-            // ผ่านการประเมิน 100%
-            showModal("ยอดเยี่ยมมาก! 🎉", "คุณวาด Flowchart ได้สมบูรณ์แบบ ลำดับขั้นตอนและเงื่อนไขถูกต้อง 100%!", "🌟", "bg-green-500", "bg-green-600");
+            showModal("ยอดเยี่ยมมาก! 🎉", "คุณวาด Flowchart ได้สมบูรณ์แบบ ลำดับขั้นตอนถูกต้อง 100%!", "🌟", "bg-green-500");
             document.getElementById('modal-box').style.boxShadow = "0 0 50px rgba(34, 197, 94, 0.5)";
+
+            // บันทึกความสำเร็จลง Firebase
+            if (!window.completedMenus) window.completedMenus = {};
+            if (!window.completedMenus[activeMenu] && window.recordSuccess) {
+                window.recordSuccess(); window.completedMenus[activeMenu] = true;
+            }
         }
+    </script>
+
+    <!-- Script สำหรับเชื่อมต่อระบบฐานข้อมูล Firebase (รองรับ Custom Config จากครู) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let currentUser = null;
+        window.statsDocRef = null;
+
+        // 1. อ่าน Config ที่ครูอาจจะตั้งค่าไว้ใหม่ผ่านหน้าเว็บ
+        let customConfigObj = null;
+        const savedConfig = localStorage.getItem('customFirebaseConfig');
+        if (savedConfig) {
+            try {
+                const match = savedConfig.match(/\{[\s\S]*\}/);
+                if (match) {
+                    customConfigObj = (new Function('return ' + match[0]))();
+                }
+            } catch (e) {
+                console.warn("ไม่สามารถอ่านรูปแบบ Firebase Config ที่ตั้งค่าไว้ได้");
+            }
+        }
+
+        // 2. ใช้ Config ของโรงเรียนที่กำหนดไว้เป็นค่าเริ่มต้นเสมอ (ฝังไว้ในโค้ดตามที่คุณส่งมา)
+        if (!customConfigObj) {
+            customConfigObj = {
+                apiKey: "AIzaSyCHbo50NB_mMykzafOIl6El88Q_TmG7h1w",
+                authDomain: "icestd-28222.firebaseapp.com",
+                projectId: "icestd-28222",
+                storageBucket: "icestd-28222.firebasestorage.app",
+                messagingSenderId: "992681991853",
+                appId: "1:992681991853:web:aa4c74953895d48c2c7024",
+                measurementId: "G-3TFP9QQZ4T"
+            };
+        }
+
+        if (customConfigObj) {
+            try {
+                const app = initializeApp(customConfigObj);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'flowchart-app';
+                
+                // ชี้เป้าหมายไปเก็บที่ Collection statistics
+                window.statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'statistics', 'global');
+
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+                initAuth();
+
+                onAuthStateChanged(auth, async (user) => {
+                    currentUser = user;
+                    if (!user) return;
+
+                    // บวกยอด View 1 ครั้งต่อการโหลด
+                    if (!sessionStorage.getItem('visited')) {
+                        sessionStorage.setItem('visited', 'true');
+                        try {
+                            await updateDoc(window.statsDocRef, { totalVisits: increment(1) });
+                        } catch (e) {
+                            await setDoc(window.statsDocRef, { totalVisits: 1, totalSuccesses: 0 }, { merge: true });
+                        }
+                    }
+
+                    // ดึงข้อมูล Real-time มาแสดงในหน้า Dashboard ของครู
+                    onSnapshot(window.statsDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const visitEl = document.getElementById('stat-visits');
+                            const successEl = document.getElementById('stat-success');
+                            if (visitEl) visitEl.innerText = data.totalVisits || 0;
+                            if (successEl) successEl.innerText = data.totalSuccesses || 0;
+                        }
+                    }, (error) => { console.error("Realtime data error:", error); });
+                });
+
+            } catch (e) {
+                console.error("Firebase setup error:", e);
+            }
+        }
+
+        window.recordSuccess = async () => {
+            if (!currentUser || !window.statsDocRef) return;
+            try {
+                await updateDoc(window.statsDocRef, { totalSuccesses: increment(1) });
+            } catch (e) {
+                await setDoc(window.statsDocRef, { totalSuccesses: 1 }, { merge: true });
+            }
+        };
     </script>
 </body>
 </html>
