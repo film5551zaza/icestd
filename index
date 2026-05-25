@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สื่อการเรียนรู้ วิทยาการคำนวณ</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* รีเซ็ตพื้นฐานและป้องกันการเลื่อนหน้าในระดับ Body */
+        body, html { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f8fafc; }
+        
+        .hidden-screen { display: none !important; }
+
+        /* การจัดการ Scroll */
+        #screen-main-select { width: 100%; height: 100%; overflow-y: auto; font-family: 'Prompt', sans-serif; }
+        #wrapper-ms { width: 100%; height: 100%; overflow: hidden; font-family: 'Prompt', sans-serif; }
+        #wrapper-hs { width: 100%; height: 100%; overflow-y: auto; font-family: 'Noto Sans Thai', sans-serif; }
+        
+        /* =========================================
+           สไตล์สำหรับ Flowchart (ม.ต้น)
+        ========================================= */
+        #canvas-container {
+            width: 100%; height: 100%; background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+            background-size: 24px 24px; position: relative; overflow: hidden; cursor: grab;
+        }
+        #canvas-container:active { cursor: grabbing; }
+        #workspace { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+        #svg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; overflow: visible; }
+        
+        .connection-line {
+            fill: none; stroke: #64748b; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round;
+            pointer-events: none; transition: stroke 0.2s, stroke-width 0.2s;
+        }
+        .connection-hitbox { fill: none; stroke: transparent; stroke-width: 25; pointer-events: auto; cursor: pointer; }
+        .connection-hitbox:hover + .connection-line { stroke: #ef4444; stroke-width: 5; }
+        
+        .connection-handle {
+            fill: #3b82f6; stroke: #ffffff; stroke-width: 2.5; cursor: grab; opacity: 0; transition: opacity 0.2s, stroke-width 0.1s; pointer-events: auto;
+        }
+        .connection-group:hover .connection-handle, .connection-handle.dragging { opacity: 1; }
+        .connection-handle:hover { stroke-width: 6; } 
+        .connection-handle:active { cursor: grabbing; }
+        
+        .connection-line.error-line { stroke: #ef4444 !important; stroke-width: 5 !important; stroke-dasharray: 8, 8; animation: dash 1s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: -16; } }
+
+        .fc-node {
+            position: absolute; background: white; border: 2px solid #3b82f6; display: flex; align-items: center; justify-content: center;
+            cursor: move; z-index: 20; min-width: 150px; padding: 12px 20px; user-select: none; transition: box-shadow 0.2s;
+        }
+        .fc-node:hover { z-index: 25; }
+        .fc-node.error { border-color: #ef4444; animation: shake 0.5s; filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.4)); }
+        
+        .fc-start-end { border-radius: 50px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-color: #38bdf8; filter: drop-shadow(0 4px 6px rgba(56, 189, 248, 0.2)); }
+        .fc-process { border-radius: 12px; background: linear-gradient(135deg, #ffffff, #f8fafc); border-color: #94a3b8; filter: drop-shadow(0 4px 6px rgba(148, 163, 184, 0.2)); }
+        
+        .fc-decision {
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); width: 180px; height: 130px; 
+            background: linear-gradient(135deg, #fef3c7, #fde68a); border: none; filter: drop-shadow(0 6px 8px rgba(245, 158, 11, 0.3));
+        }
+        .fc-decision::before {
+            content: ''; position: absolute; inset: 2px; background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); z-index: -1;
+        }
+
+        .fc-node input {
+            width: 95%; text-align: center; background: transparent; border: none; outline: none; font-weight: 600; color: #334155; font-family: inherit; pointer-events: auto; z-index: 21;
+        }
+        .fc-decision input { max-width: 90px; }
+
+        .port {
+            position: absolute; width: 14px; height: 14px; border-radius: 50%; background: white; border: 3px solid; z-index: 30; cursor: crosshair; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, background-color 0.2s;
+        }
+        .port:hover { transform: scale(1.4); background-color: #f1f5f9; }
+        
+        .port-in { top: -7px; left: 50%; transform: translateX(-50%); border-color: #94a3b8; } 
+        .port-out { bottom: -7px; left: 50%; transform: translateX(-50%); border-color: #3b82f6; } 
+        .port-out-yes { bottom: -7px; left: 50%; transform: translateX(-50%); border-color: #10b981; }
+        .port-out-no { right: -7px; top: 50%; transform: translateY(-50%); border-color: #ef4444; }
+
+        .node-controls { position: absolute; top: -20px; right: -15px; display: none; gap: 6px; z-index: 50; padding: 15px; }
+        .fc-node:hover .node-controls, .node-controls:hover { display: flex; }
+        .control-btn {
+            background: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 14px; pointer-events: auto; transition: transform 0.2s, background 0.2s;
+        }
+        .control-btn:hover { background: #f8fafc; transform: scale(1.15); }
+
+        .bg-color-1 { background: white; }
+        .bg-color-2 { background: #fef08a; } 
+        .bg-color-3 { background: #bbf7d0; } 
+        .bg-color-4 { background: #fecaca; } 
+        .bg-color-5 { background: #bfdbfe; } 
+
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        .glass-sidebar { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-right: 1px solid rgba(255,255,255,0.5); }
+
+        /* =========================================
+           สไตล์สำหรับ DIKW (ม.ปลาย)
+        ========================================= */
+        .slide-in { animation: slideIn 0.4s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- =========================================================================
+         หน้าหลัก: เลือกระดับชั้นเรียน (Main Selection Screen)
+    ========================================================================= -->
+    <div id="screen-main-select" class="flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 relative">
+        <div class="bg-white/90 backdrop-blur-md p-10 md:p-14 rounded-[2rem] shadow-2xl text-center max-w-4xl w-full border border-white">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 text-indigo-600 rounded-full mb-6 text-5xl shadow-inner border border-white">
+                🎓
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4 tracking-tight">สื่อการเรียนรู้ <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">วิทยาการคำนวณ</span></h1>
+            <p class="text-slate-500 mb-10 text-lg md:text-xl">กรุณาเลือกระดับชั้นเรียนของคุณเพื่อเข้าสู่บทเรียน</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- ปุ่ม ม.ต้น -->
+                <button onclick="openMiddleSchool()" class="group relative p-10 rounded-3xl bg-white border border-slate-200 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 flex flex-col items-center gap-6 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-sky-50 to-blue-100 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                    <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-4xl relative z-10 shadow-sm border border-white">👨‍🍳</div>
+                    <div class="relative z-10 text-center">
+                        <h2 class="text-2xl font-bold text-slate-800 group-hover:text-blue-700 transition mb-2">มัธยมศึกษาตอนต้น</h2>
+                        <p class="text-slate-500 font-medium bg-slate-100/80 px-4 py-1.5 rounded-full inline-block">เรื่อง: การสร้าง Flowchart</p>
+                    </div>
+                </button>
+                
+                <!-- ปุ่ม ม.ปลาย -->
+                <button onclick="openHighSchool()" class="group relative p-10 rounded-3xl bg-white border border-slate-200 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 flex flex-col items-center gap-6 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-fuchsia-100 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                    <div class="w-20 h-20 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-4xl relative z-10 shadow-sm border border-white">📊</div>
+                    <div class="relative z-10 text-center">
+                        <h2 class="text-2xl font-bold text-slate-800 group-hover:text-purple-700 transition mb-2">มัธยมศึกษาตอนปลาย</h2>
+                        <p class="text-slate-500 font-medium bg-slate-100/80 px-4 py-1.5 rounded-full inline-block">เรื่อง: ข้อมูลมีคุณค่า (DIKW)</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- =========================================================================
+         แอปพลิเคชัน มัธยมศึกษาตอนต้น (Flowchart)
+    ========================================================================= -->
+    <div id="wrapper-ms" class="hidden-screen flex flex-col h-full">
+        
+        <!-- หน้าเลือกเมนูอาหาร (Flowchart) -->
+        <div id="screen-menu" class="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 relative overflow-y-auto">
+            <button onclick="showLevelSelection()" class="absolute top-6 left-6 text-slate-500 hover:text-indigo-600 bg-white/80 backdrop-blur px-5 py-2.5 rounded-xl shadow-sm border border-slate-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
+                ⬅️ กลับหน้าเลือกชั้นเรียน
+            </button>
+            <button onclick="showTeacherLogin()" class="absolute top-6 right-6 text-slate-500 hover:text-indigo-600 bg-white/80 backdrop-blur px-5 py-2.5 rounded-xl shadow-sm border border-slate-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
+                🔒 ระบบครูผู้สอน
+            </button>
+
+            <div class="bg-white/90 backdrop-blur-md p-10 rounded-[2rem] shadow-2xl text-center max-w-3xl w-full border border-white mt-16 md:mt-0">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 text-indigo-500 rounded-full mb-6 text-4xl shadow-inner">👨‍🍳</div>
+                <h1 class="text-4xl font-bold text-slate-800 mb-4 tracking-tight">ฝึกสร้าง <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Flowchart</span> ทำอาหาร</h1>
+                <p class="text-slate-500 mb-10 text-lg">มาเรียนรู้กระบวนการคิดอย่างเป็นขั้นตอน พร้อมระบบตรวจคำตอบอัจฉริยะ</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <button onclick="startApp('friedEgg')" class="group relative p-8 rounded-3xl bg-white border border-slate-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col items-center gap-4 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-orange-50 to-orange-100 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                        <span class="text-6xl relative z-10 drop-shadow-md">🍳</span><span class="font-bold text-slate-700 group-hover:text-orange-600 relative z-10 text-lg transition">ทอดไข่ดาว</span>
+                    </button>
+                    <button onclick="startApp('boiledEgg')" class="group relative p-8 rounded-3xl bg-white border border-slate-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col items-center gap-4 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-yellow-50 to-amber-100 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                        <span class="text-6xl relative z-10 drop-shadow-md">🥚</span><span class="font-bold text-slate-700 group-hover:text-amber-600 relative z-10 text-lg transition">ต้มไข่</span>
+                    </button>
+                    <button onclick="startApp('noodles')" class="group relative p-8 rounded-3xl bg-white border border-slate-100 shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col items-center gap-4 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-red-50 to-rose-100 opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                        <span class="text-6xl relative z-10 drop-shadow-md">🍜</span><span class="font-bold text-slate-700 group-hover:text-rose-600 relative z-10 text-lg transition">ต้มมาม่า</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้าแผงควบคุมสำหรับครู -->
+        <div id="screen-teacher-dashboard" class="hidden-screen flex-1 flex flex-col items-center justify-center bg-slate-50 p-6 relative overflow-y-auto">
+            <button onclick="closeTeacherDashboard()" class="absolute top-6 left-6 text-slate-600 hover:text-indigo-600 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-slate-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
+                ⬅️ กลับหน้าเมนูอาหาร
+            </button>
+
+            <div class="bg-white p-10 rounded-[2rem] shadow-xl max-w-3xl w-full text-center border border-slate-100 mt-16 md:mt-0">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">📊 แผงควบคุมสำหรับครูผู้สอน (ม.ต้น)</h1>
+                <p class="text-slate-500 mb-8">ตรวจสอบสถิติการใช้งาน และตั้งค่าฐานข้อมูล Firebase</p>
+
+                <div class="flex flex-col md:flex-row justify-center gap-8 md:gap-12 bg-indigo-50/50 py-8 px-10 rounded-3xl border border-indigo-100 shadow-sm mb-8">
+                    <div class="text-center">
+                        <div class="text-6xl font-black text-indigo-600 drop-shadow-sm" id="stat-visits">-</div>
+                        <div class="text-slate-600 font-medium mt-3">เข้าใช้งาน (ครั้ง)</div>
+                    </div>
+                    <div class="hidden md:block w-px bg-indigo-200"></div>
+                    <div class="text-center">
+                        <div class="text-6xl font-black text-emerald-500 drop-shadow-sm" id="stat-success">-</div>
+                        <div class="text-slate-600 font-medium mt-3">ทำถูกต้องสำเร็จ (คน)</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-200 text-left">
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">⚙️ ตั้งค่าฐานข้อมูล <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md font-medium">Firebase Config</span></h3>
+                    <p class="text-sm text-slate-500 mb-4 leading-relaxed">ตอนนี้ระบบได้ทำการฝังโค้ด Firebase ของคุณ <b>(icestd-28222)</b> ไว้ให้เป็นค่าเริ่มต้นแล้ว หากต้องการเปลี่ยนฐานข้อมูลใหม่ สามารถวางโค้ดทับที่นี่ได้เลยครับ</p>
+                    <textarea id="firebase-config-input" class="w-full h-32 p-4 border border-slate-300 rounded-xl font-mono text-sm bg-white shadow-inner focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="โค้ดถูกฝังในระบบแล้ว... หากต้องการเปลี่ยนให้วางโค้ดใหม่ที่นี่"></textarea>
+                    
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <button onclick="saveCustomFirebase()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition hover:shadow-lg">💾 บันทึกและเริ่มระบบใหม่</button>
+                        <button onclick="clearCustomFirebase()" class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 px-6 py-2.5 rounded-xl font-bold transition">🗑️ ลบการตั้งค่า</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- หน้ากระดานทำงาน (Workspace) -->
+        <div id="screen-workspace" class="hidden-screen flex-1 flex flex-col h-full relative">
+            <div class="h-16 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-50 shrink-0">
+                <div class="flex items-center gap-4">
+                    <button onclick="goBackToMenu()" class="text-slate-500 hover:text-indigo-600 flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition font-medium">
+                        <span>⬅️</span> กลับ
+                    </button>
+                    <div class="h-6 w-px bg-slate-300"></div>
+                    <h2 id="current-menu-title" class="text-xl font-bold text-slate-700 flex items-center gap-2">เมนู: ...</h2>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="resetWorkspace()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition font-bold flex items-center gap-2">🔄 เริ่มใหม่</button>
+                    <button onclick="checkFlowchart()" class="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transition hover:shadow-xl flex items-center gap-2">✅ ตรวจสอบผล</button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden relative">
+                <div class="w-72 glass-sidebar shadow-[4px_0_24px_rgba(0,0,0,0.05)] flex flex-col z-40 shrink-0 relative">
+                    <div class="p-5 border-b border-slate-200/50">
+                        <h3 class="font-bold text-slate-800 mb-4 text-sm flex items-center gap-2">✨ เพิ่มบล็อคคำสั่ง</h3>
+                        <div class="grid grid-cols-1 gap-3">
+                            <button onclick="addBlock('start-end')" class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl hover:border-sky-400 hover:shadow-md transition text-sm text-slate-600 font-medium group">
+                                <div class="w-7 h-5 bg-sky-100 border border-sky-400 rounded-full group-hover:bg-sky-200 transition"></div> เริ่ม / สิ้นสุด
+                            </button>
+                            <button onclick="addBlock('process')" class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl hover:border-slate-400 hover:shadow-md transition text-sm text-slate-600 font-medium group">
+                                <div class="w-7 h-5 bg-slate-50 border border-slate-400 rounded-md group-hover:bg-slate-200 transition"></div> กระบวนการ
+                            </button>
+                            <button onclick="addBlock('decision')" class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl hover:border-amber-400 hover:shadow-md transition text-sm text-slate-600 font-medium group">
+                                <div class="w-7 h-5 bg-amber-100 border border-amber-400 group-hover:bg-amber-200 transition" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div> เงื่อนไข
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-5 flex-1 overflow-y-auto">
+                        <h3 class="font-bold text-slate-800 mb-2 text-sm flex items-center gap-2">📝 คลังคำศัพท์</h3>
+                        <p class="text-[11px] text-rose-500 mb-4 font-semibold bg-rose-50 p-2 rounded-lg border border-rose-100">* ลากบล็อคแล้วคลิกก็อปปี้คำศัพท์ไปวางให้ครบ!</p>
+                        <div id="vocab-list" class="flex flex-col gap-2.5"></div>
+                    </div>
+                    <div class="p-4 bg-indigo-50/50 border-t border-indigo-100/50 text-[11px] text-indigo-700 font-medium leading-relaxed">
+                        💡 <b>Tip:</b> ระบบนี้จะวาดเส้นแบบหักมุม 90 องศาให้สวยงาม! หากเส้นทับกัน สามารถลากจุด <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 mx-1 shadow-sm"></span> เพื่อดัดเส้นได้
+                    </div>
+                </div>
+
+                <div id="canvas-container">
+                    <div id="workspace">
+                        <svg id="svg-layer">
+                            <defs>
+                                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" /></marker>
+                                <marker id="arrow-hover" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" /></marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="absolute bottom-6 right-6 bg-white/90 backdrop-blur rounded-2xl shadow-lg flex flex-col border border-slate-200 overflow-hidden z-50">
+                    <button onclick="setZoom(0.1)" class="p-3.5 hover:bg-slate-100 border-b border-slate-100 font-bold text-slate-600 transition">➕</button>
+                    <button onclick="resetZoom()" class="p-3.5 hover:bg-slate-100 border-b border-slate-100 text-xs font-bold text-slate-600 transition">100%</button>
+                    <button onclick="setZoom(-0.1)" class="p-3.5 hover:bg-slate-100 font-bold text-slate-600 transition">➖</button>
+                </div>
+                
+                <div id="wiring-hint" class="absolute top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full shadow-xl opacity-0 transition-opacity z-50 pointer-events-none text-sm font-medium tracking-wide">
+                    ลากเส้นไปหาจุดสีเทา (ทางเข้า) ของอีกบล็อค
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =========================================================================
+         แอปพลิเคชัน มัธยมศึกษาตอนปลาย (DIKW Pyramid - React App)
+    ========================================================================= -->
+    <div id="wrapper-hs" class="hidden-screen relative">
+        <div id="root"></div>
+    </div>
+
+    <!-- =========================================================================
+         Modals สำหรับใช้งานร่วมกัน (Login ครุ & แจ้งเตือน)
+    ========================================================================= -->
+    <div id="teacher-login-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white p-8 rounded-[2rem] max-w-sm w-full mx-4 shadow-2xl text-center border border-slate-100">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 text-slate-500 rounded-full mb-4 text-3xl">🔐</div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">เข้าสู่ระบบครูผู้สอน</h3>
+            <div class="flex flex-col gap-5 text-left">
+                <div><label class="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Username</label><input type="text" id="teacher-user" class="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="ระบุชื่อผู้ใช้"></div>
+                <div><label class="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Password</label><input type="password" id="teacher-pass" class="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="ระบุรหัสผ่าน"></div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="submitTeacherLogin()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md">เข้าสู่ระบบ</button>
+                <button onclick="closeTeacherLogin()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-bold transition">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white p-8 rounded-[2rem] max-w-md w-full mx-4 text-center shadow-2xl transform transition-transform scale-95 border border-white" id="modal-box">
+            <div id="modal-icon" class="text-7xl mb-5 drop-shadow-md">⚠️</div>
+            <h3 id="modal-title" class="text-2xl font-bold text-slate-800 mb-3 tracking-tight">แจ้งเตือน</h3>
+            <p id="modal-message" class="text-slate-500 mb-8 text-lg leading-relaxed">ข้อความรายละเอียด</p>
+            <button onclick="closeModal()" id="modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3.5 rounded-xl font-bold text-lg transition shadow-md">เข้าใจแล้ว</button>
+        </div>
+    </div>
+
+
+    <!-- =========================================================================
+         JAVASCRIPT ฝั่ง Navigation และ Flowchart (Vanilla JS)
+    ========================================================================= -->
+    <script>
+        // --- Navigation ---
+        window.showLevelSelection = function() {
+            document.getElementById('screen-main-select')?.classList.remove('hidden-screen');
+            document.getElementById('wrapper-ms')?.classList.add('hidden-screen');
+            document.getElementById('wrapper-hs')?.classList.add('hidden-screen');
+        }
+
+        window.openMiddleSchool = function() {
+            document.getElementById('screen-main-select')?.classList.add('hidden-screen');
+            document.getElementById('wrapper-ms')?.classList.remove('hidden-screen');
+            document.getElementById('wrapper-hs')?.classList.add('hidden-screen');
+            
+            document.getElementById('screen-menu')?.classList.remove('hidden-screen');
+            document.getElementById('screen-workspace')?.classList.add('hidden-screen');
+            document.getElementById('screen-teacher-dashboard')?.classList.add('hidden-screen');
+
+            // บันทึกยอดวิว ม.ต้น
+            if (!sessionStorage.getItem('ms_visited') && window.fbDb) {
+                sessionStorage.setItem('ms_visited', 'true');
+                try { window.fbUpdateDoc(window.statsDocRef, { totalVisits: window.fbIncrement(1) }); } 
+                catch (e) { window.fbSetDoc(window.statsDocRef, { totalVisits: 1, totalSuccesses: 0 }, { merge: true }); }
+            }
+        }
+
+        window.openHighSchool = function() {
+            document.getElementById('screen-main-select')?.classList.add('hidden-screen');
+            document.getElementById('wrapper-ms')?.classList.add('hidden-screen');
+            document.getElementById('wrapper-hs')?.classList.remove('hidden-screen');
+
+            // บันทึกยอดวิว ม.ปลาย (รายวัน)
+            if (!sessionStorage.getItem('hs_visited') && window.fbDb) {
+                sessionStorage.setItem('hs_visited', 'true');
+                const today = new Date().toISOString().split('T')[0];
+                const hsStatsRef = window.fbDoc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'hs_statistics', 'global');
+                try {
+                    window.fbSetDoc(hsStatsRef, {
+                        dailyVisits: { [today]: window.fbIncrement(1) }
+                    }, { merge: true });
+                } catch (e) {}
+            }
+        }
+
+        // --- Flowchart Logic ---
+        const menus = {
+            friedEgg: {
+                title: "🍳 ทอดไข่ดาว",
+                vocab: ["เริ่มต้น", "ตั้งกระทะใส่น้ำมัน", "ตอกไข่ใส่กระทะ", "ไข่สุกหรือยัง?", "รอให้สุก", "ตักใส่จาน", "สิ้นสุด"],
+                transitions: [
+                    { from: "เริ่มต้น", type: "out", to: "ตั้งกระทะใส่น้ำมัน" },
+                    { from: "ตั้งกระทะใส่น้ำมัน", type: "out", to: "ตอกไข่ใส่กระทะ" },
+                    { from: "ตอกไข่ใส่กระทะ", type: "out", to: "ไข่สุกหรือยัง?" },
+                    { from: "ไข่สุกหรือยัง?", type: "yes", to: "ตักใส่จาน" }, 
+                    { from: "ไข่สุกหรือยัง?", type: "no", to: "รอให้สุก" }, 
+                    { from: "รอให้สุก", type: "out", to: "ไข่สุกหรือยัง?" }, 
+                    { from: "ตักใส่จาน", type: "out", to: "สิ้นสุด" }
+                ]
+            },
+            boiledEgg: {
+                title: "🥚 ต้มไข่",
+                vocab: ["เริ่มต้น", "ต้มน้ำให้เดือด", "ใส่ไข่ลงไป", "ครบ 5 นาที?", "รอให้ครบ 5 นาที", "ตักไข่แช่น้ำเย็น", "ปอกเปลือก", "สิ้นสุด"],
+                transitions: [
+                    { from: "เริ่มต้น", type: "out", to: "ต้มน้ำให้เดือด" },
+                    { from: "ต้มน้ำให้เดือด", type: "out", to: "ใส่ไข่ลงไป" },
+                    { from: "ใส่ไข่ลงไป", type: "out", to: "ครบ 5 นาที?" },
+                    { from: "ครบ 5 นาที?", type: "yes", to: "ตักไข่แช่น้ำเย็น" }, 
+                    { from: "ครบ 5 นาที?", type: "no", to: "รอให้ครบ 5 นาที" }, 
+                    { from: "รอให้ครบ 5 นาที", type: "out", to: "ครบ 5 นาที?" }, 
+                    { from: "ตักไข่แช่น้ำเย็น", type: "out", to: "ปอกเปลือก" },
+                    { from: "ปอกเปลือก", type: "out", to: "สิ้นสุด" }
+                ]
+            },
+            noodles: {
+                title: "🍜 ต้มมาม่า",
+                vocab: ["เริ่มต้น", "ต้มน้ำ", "ใส่เส้นมาม่า", "เส้นนิ่มหรือยัง?", "รอให้เส้นนิ่ม", "ใส่เครื่องปรุง", "สิ้นสุด"],
+                transitions: [
+                    { from: "เริ่มต้น", type: "out", to: "ต้มน้ำ" },
+                    { from: "ต้มน้ำ", type: "out", to: "ใส่เส้นมาม่า" },
+                    { from: "ใส่เส้นมาม่า", type: "out", to: "เส้นนิ่มหรือยัง?" },
+                    { from: "เส้นนิ่มหรือยัง?", type: "yes", to: "ใส่เครื่องปรุง" },
+                    { from: "เส้นนิ่มหรือยัง?", type: "no", to: "รอให้เส้นนิ่ม" },
+                    { from: "รอให้เส้นนิ่ม", type: "out", to: "เส้นนิ่มหรือยัง?" }, 
+                    { from: "ใส่เครื่องปรุง", type: "out", to: "สิ้นสุด" }
+                ]
+            }
+        };
+
+        let activeMenu = null;
+        let blockCounter = 0;
+        let scale = 1, panX = 0, panY = 0;
+        let isPanning = false, startPanX = 0, startPanY = 0;
+        let draggedNode = null, nodeOffsetX = 0, nodeOffsetY = 0;
+        let connections = []; 
+        let isWiring = false, wiringStartPort = null, tempPath = null, draggedHandleConn = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const canvasContainer = document.getElementById('canvas-container');
+            const workspace = document.getElementById('workspace');
+
+            if(!canvasContainer || !workspace) return;
+
+            canvasContainer.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                e.preventDefault(); window.setZoom(e.deltaY > 0 ? -0.1 : 0.1);
+            });
+
+            canvasContainer.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.fc-node') || e.target.closest('.port') || e.target.closest('.connection-hitbox') || e.target.closest('.connection-handle')) return;
+                isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isPanning) { panX = e.clientX - startPanX; panY = e.clientY - startPanY; window.updateTransform(); }
+                
+                if (draggedNode) {
+                    const rect = canvasContainer.getBoundingClientRect();
+                    draggedNode.style.left = `${(e.clientX - rect.left - panX) / scale - nodeOffsetX}px`;
+                    draggedNode.style.top = `${(e.clientY - rect.top - panY) / scale - nodeOffsetY}px`;
+                    window.updateConnections();
+                }
+
+                if (draggedHandleConn) {
+                    const rect = canvasContainer.getBoundingClientRect();
+                    draggedHandleConn.customHandle = { x: (e.clientX - rect.left - panX) / scale, y: (e.clientY - rect.top - panY) / scale };
+                    window.updateConnections();
+                }
+
+                if (isWiring && tempPath && wiringStartPort) {
+                    const rect = workspace.getBoundingClientRect();
+                    const startRect = wiringStartPort.getBoundingClientRect();
+                    const curve = window.getFlowchartPath(
+                        (startRect.left + startRect.width/2 - rect.left) / scale, 
+                        (startRect.top + startRect.height/2 - rect.top) / scale, 
+                        (e.clientX - rect.left) / scale, (e.clientY - rect.top) / scale, 
+                        wiringStartPort.dataset.type === 'no'
+                    );
+                    tempPath.setAttribute('d', curve.pathString);
+                }
+            });
+
+            window.addEventListener('mouseup', (e) => {
+                isPanning = false; draggedNode = null;
+                if (draggedHandleConn) { draggedHandleConn.handleElement.classList.remove('dragging'); draggedHandleConn = null; }
+                if (isWiring) {
+                    const dropTarget = e.target;
+                    if (dropTarget.classList.contains('port-in')) {
+                        if (wiringStartPort.dataset.node !== dropTarget.dataset.node) 
+                            window.createConnection(wiringStartPort.dataset.node, wiringStartPort.dataset.type, dropTarget.dataset.node);
+                    }
+                    if (tempPath) tempPath.remove();
+                    tempPath = null; isWiring = false; wiringStartPort = null;
+                    document.getElementById('wiring-hint').style.opacity = '0';
+                }
+            });
+        });
+
+        // ใช้งาน Modal ร่วมกันทั้งแอป
+        window.submitTeacherLogin = () => {
+            const user = document.getElementById('teacher-user').value;
+            const pass = document.getElementById('teacher-pass').value;
+            
+            if (user === 'staff' && pass === '47000') {
+                window.closeTeacherLogin();
+                // เปลี่ยนหน้าของ MS Dashboard ถ้าเรียกมาจาก MS
+                if(!document.getElementById('wrapper-ms').classList.contains('hidden-screen')) {
+                    document.getElementById('screen-menu')?.classList.add('hidden-screen');
+                    document.getElementById('screen-teacher-dashboard')?.classList.remove('hidden-screen');
+                } else {
+                    // ของ HS Dashboard 
+                    window.triggerHSDashboard(); 
+                }
+                
+                const savedConfig = localStorage.getItem('customFirebaseConfig');
+                if(savedConfig) document.getElementById('firebase-config-input').value = savedConfig;
+            } else { alert('⚠️ ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง!'); }
+        };
+
+        window.showTeacherLogin = () => {
+            document.getElementById('teacher-user').value = '';
+            document.getElementById('teacher-pass').value = '';
+            document.getElementById('teacher-login-modal')?.classList.remove('hidden');
+        };
+
+        window.closeTeacherLogin = () => {
+            document.getElementById('teacher-login-modal')?.classList.add('hidden');
+        };
+
+        window.closeTeacherDashboard = () => {
+            document.getElementById('screen-teacher-dashboard')?.classList.add('hidden-screen');
+            document.getElementById('screen-menu')?.classList.remove('hidden-screen');
+        };
+
+        window.saveCustomFirebase = () => {
+            const configCode = document.getElementById('firebase-config-input').value.trim();
+            if(configCode) {
+                localStorage.setItem('customFirebaseConfig', configCode);
+                alert('✅ บันทึกโค้ด Firebase เรียบร้อยแล้ว ระบบจะทำการรีโหลดเพื่อใช้งานฐานข้อมูลใหม่');
+                location.reload();
+            } else { alert('กรุณาวางโค้ดก่อนบันทึกครับ'); }
+        };
+
+        window.clearCustomFirebase = () => {
+            if(confirm('แน่ใจหรือไม่ว่าต้องการลบการตั้งค่า? (ระบบจะกลับไปใช้ฐานข้อมูลเริ่มต้น)')) {
+                localStorage.removeItem('customFirebaseConfig');
+                document.getElementById('firebase-config-input').value = '';
+                alert('🗑️ ลบการตั้งค่าเรียบร้อย ระบบจะทำการรีโหลด');
+                location.reload();
+            }
+        };
+
+        window.startApp = function(menuKey) {
+            activeMenu = menuKey;
+            document.getElementById('screen-menu')?.classList.add('hidden-screen');
+            document.getElementById('screen-workspace')?.classList.remove('hidden-screen');
+            document.getElementById('current-menu-title').innerText = "เมนู: " + menus[menuKey].title;
+            
+            const vocabContainer = document.getElementById('vocab-list');
+            vocabContainer.innerHTML = '';
+            menus[menuKey].vocab.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = "px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm hover:bg-indigo-50 hover:border-indigo-300 transition text-slate-700 w-full text-left shadow-sm hover:shadow flex items-center gap-2.5 group";
+                btn.innerHTML = `<span class="text-indigo-400 group-hover:text-indigo-600 transition">📋</span> <span class="font-medium">${word}</span>`;
+                btn.onclick = () => window.copyToClipboard(word);
+                vocabContainer.appendChild(btn);
+            });
+            window.resetWorkspace();
+        }
+
+        window.goBackToMenu = function() {
+            document.getElementById('screen-workspace')?.classList.add('hidden-screen');
+            document.getElementById('screen-menu')?.classList.remove('hidden-screen');
+        }
+
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                window.showModal("คัดลอกแล้ว!", `นำคำว่า "${text}" ไปวางในบล็อคได้เลย (ห้ามพิมพ์ผิดนะ!)`, "📋", "bg-emerald-500");
+            }).catch(err => {
+                const tempInput = document.createElement("input");
+                tempInput.value = text;
+                document.body.appendChild(tempInput); tempInput.select(); document.execCommand("copy"); document.body.removeChild(tempInput);
+                window.showModal("คัดลอกแล้ว!", `นำคำว่า "${text}" ไปวางในบล็อคได้เลย`, "📋", "bg-emerald-500");
+            });
+        }
+
+        window.updateTransform = function() { 
+            const workspace = document.getElementById('workspace');
+            if(workspace) workspace.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; 
+        }
+        window.setZoom = function(delta) { scale = Math.max(0.5, Math.min(scale + delta, 2)); window.updateTransform(); }
+        window.resetZoom = function() { scale = 1; panX = 0; panY = 0; window.updateTransform(); }
+
+        window.resetWorkspace = function() {
+            document.querySelectorAll('.fc-node').forEach(el => el.remove());
+            document.querySelectorAll('.connection-group').forEach(el => el.remove());
+            connections = []; blockCounter = 0; window.resetZoom();
+        }
+
+        window.addBlock = function(type) {
+            blockCounter++;
+            const nodeId = `node-${blockCounter}`;
+            const node = document.createElement('div');
+            node.className = `fc-node bg-color-1 ${type === 'start-end' ? 'fc-start-end' : type === 'process' ? 'fc-process' : 'fc-decision'}`;
+            node.id = nodeId; node.dataset.type = type;
+
+            const controlsHtml = `<div class="node-controls"><div class="control-btn text-xl" title="เปลี่ยนสี" onclick="window.cycleColor('${nodeId}')">🎨</div><div class="control-btn text-rose-500 text-xl" title="ลบ" onclick="window.deleteNode('${nodeId}')">🗑️</div></div>`;
+
+            if (type === 'start-end') {
+                node.innerHTML = `${controlsHtml}<div class="port port-in" data-node="${nodeId}" data-type="in"></div><div class="port port-out" data-node="${nodeId}" data-type="out"></div><input type="text" placeholder="เริ่มต้น / สิ้นสุด">`;
+            } else if (type === 'process') {
+                node.innerHTML = `${controlsHtml}<div class="port port-in" data-node="${nodeId}" data-type="in"></div><div class="port port-out" data-node="${nodeId}" data-type="out"></div><input type="text" placeholder="กระบวนการ...">`;
+            } else if (type === 'decision') {
+                node.innerHTML = `${controlsHtml}<div class="port port-in" data-node="${nodeId}" data-type="in"></div><div class="port port-out-yes" data-node="${nodeId}" data-type="yes"><span class="absolute top-5 left-1/2 -translate-x-1/2 text-emerald-500 font-bold text-xs pointer-events-none bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-emerald-100">ใช่</span></div><div class="port port-out-no" data-node="${nodeId}" data-type="no"><span class="absolute -top-6 left-1/2 -translate-x-1/2 text-rose-500 font-bold text-xs pointer-events-none bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-rose-100">ไม่ใช่</span></div><input type="text" placeholder="เงื่อนไข?">`;
+            }
+
+            const canvasContainer = document.getElementById('canvas-container');
+            const workspace = document.getElementById('workspace');
+            const svgLayer = document.getElementById('svg-layer');
+            const rect = canvasContainer.getBoundingClientRect();
+            node.style.left = `${(rect.width / 2 - panX) / scale - 70}px`;
+            node.style.top = `${(rect.height / 2 - panY) / scale - 30}px`;
+
+            node.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.classList.contains('port') || e.target.closest('.node-controls')) return;
+                draggedNode = node;
+                nodeOffsetX = ((e.clientX - canvasContainer.getBoundingClientRect().left - panX) / scale) - parseFloat(node.style.left || 0);
+                nodeOffsetY = ((e.clientY - canvasContainer.getBoundingClientRect().top - panY) / scale) - parseFloat(node.style.top || 0);
+                workspace.appendChild(node);
+            });
+
+            node.querySelectorAll('.port:not(.port-in)').forEach(port => {
+                port.addEventListener('mousedown', (e) => {
+                    e.stopPropagation(); isWiring = true; wiringStartPort = port;
+                    tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    tempPath.setAttribute('class', 'connection-line');
+                    svgLayer.appendChild(tempPath);
+                    document.getElementById('wiring-hint').style.opacity = '1';
+                });
+            });
+
+            workspace.appendChild(node);
+        }
+
+        window.deleteNode = function(nodeId) {
+            connections = connections.filter(conn => {
+                if (conn.from === nodeId || conn.to === nodeId) { conn.groupElement.remove(); return false; }
+                return true;
+            });
+            document.getElementById(nodeId)?.remove();
+        }
+
+        window.cycleColor = function(nodeId) {
+            const node = document.getElementById(nodeId);
+            if(!node) return;
+            let currentClass = Array.from(node.classList).find(c => c.startsWith('bg-color-'));
+            let nextNum = parseInt(currentClass.split('-')[2]) >= 5 ? 1 : parseInt(currentClass.split('-')[2]) + 1;
+            node.classList.replace(currentClass, `bg-color-${nextNum}`);
+        }
+
+        window.createConnection = function(fromId, fromType, toId) {
+            const svgLayer = document.getElementById('svg-layer');
+            connections = connections.filter(conn => {
+                if (conn.from === fromId && conn.fromType === fromType) { conn.groupElement.remove(); return false; }
+                return true;
+            });
+
+            const groupElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            groupElement.setAttribute('class', 'connection-group');
+
+            const hitboxElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            hitboxElement.setAttribute('class', 'connection-hitbox');
+
+            const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            pathElement.setAttribute('class', 'connection-line');
+            pathElement.setAttribute('marker-end', 'url(#arrow)');
+
+            const handleElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            handleElement.setAttribute('class', 'connection-handle');
+            handleElement.setAttribute('r', '7');
+            
+            hitboxElement.addEventListener('click', () => { groupElement.remove(); connections = connections.filter(c => c.groupElement !== groupElement); });
+            hitboxElement.addEventListener('mouseenter', () => pathElement.setAttribute('marker-end', 'url(#arrow-hover)'));
+            hitboxElement.addEventListener('mouseleave', () => pathElement.setAttribute('marker-end', 'url(#arrow)'));
+
+            const newConn = { from: fromId, fromType: fromType, to: toId, groupElement, hitboxElement, pathElement, handleElement, customHandle: null };
+
+            handleElement.addEventListener('mousedown', (e) => { e.stopPropagation(); draggedHandleConn = newConn; handleElement.classList.add('dragging'); });
+            handleElement.addEventListener('dblclick', (e) => { e.stopPropagation(); newConn.customHandle = null; window.updateConnections(); });
+
+            groupElement.appendChild(hitboxElement); groupElement.appendChild(pathElement); groupElement.appendChild(handleElement);
+            svgLayer.appendChild(groupElement);
+            
+            connections.push(newConn); window.updateConnections();
+        }
+
+        window.getFlowchartPath = function(x1, y1, x2, y2, isSideExit = false) {
+            let pathString; let hx, hy;
+            if (isSideExit) { 
+                const midX = Math.max(x1 + 50, x2 + 50); const midY = y2 - 40; 
+                pathString = `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+                hx = midX; hy = (y1 + midY) / 2;
+            } 
+            else if (y2 < y1 + 20) {
+                const isTargetLeft = x2 <= x1;
+                const midX = isTargetLeft ? Math.min(x1 - 80, x2 - 50) : Math.max(x1 + 80, x2 + 50);
+                const dropY = y1 + 35; const riseY = y2 - 35; 
+                pathString = `M ${x1} ${y1} L ${x1} ${dropY} L ${midX} ${dropY} L ${midX} ${riseY} L ${x2} ${riseY} L ${x2} ${y2}`;
+                hx = midX; hy = (dropY + riseY) / 2;
+            } 
+            else {
+                if (Math.abs(x1 - x2) < 15) {
+                    pathString = `M ${x1} ${y1} L ${x2} ${y2}`;
+                    hx = (x1 + x2) / 2; hy = (y1 + y2) / 2;
+                } else {
+                    const midY = y1 + (y2 - y1) / 2;
+                    pathString = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+                    hx = (x1 + x2) / 2; hy = midY;
+                }
+            }
+            return { pathString, hx, hy };
+        }
+
+        window.updateConnections = function() {
+            const workspace = document.getElementById('workspace');
+            if(!workspace) return;
+            const rect = workspace.getBoundingClientRect();
+            connections.forEach(conn => {
+                const fromNode = document.getElementById(conn.from), toNode = document.getElementById(conn.to);
+                if (!fromNode || !toNode) return;
+                
+                const fromPort = conn.fromType === 'out' ? fromNode.querySelector('.port-out') : (conn.fromType === 'yes' ? fromNode.querySelector('.port-out-yes') : fromNode.querySelector('.port-out-no'));
+                const toPort = toNode.querySelector('.port-in');
+                
+                if (fromPort && toPort) {
+                    const fromRect = fromPort.getBoundingClientRect(), toRect = toPort.getBoundingClientRect();
+                    const startX = (fromRect.left + fromRect.width/2 - rect.left) / scale, startY = (fromRect.top + fromRect.height/2 - rect.top) / scale;
+                    const endX = (toRect.left + toRect.width/2 - rect.left) / scale, endY = (toRect.top + toRect.height/2 - rect.top) / scale;
+
+                    let pathString, hx, hy;
+                    if (conn.customHandle) {
+                        hx = conn.customHandle.x; hy = conn.customHandle.y;
+                        pathString = `M ${startX} ${startY} Q ${2 * hx - 0.5 * startX - 0.5 * endX} ${2 * hy - 0.5 * startY - 0.5 * endY} ${endX} ${endY}`;
+                    } else {
+                        const curve = window.getFlowchartPath(startX, startY, endX, endY, conn.fromType === 'no');
+                        pathString = curve.pathString; hx = curve.hx; hy = curve.hy;
+                    }
+                    conn.pathElement.setAttribute('d', pathString); conn.hitboxElement.setAttribute('d', pathString); 
+                    conn.handleElement.setAttribute('cx', hx); conn.handleElement.setAttribute('cy', hy);
+                }
+            });
+        }
+
+        window.showModal = function(title, message, icon, btnBg = "bg-indigo-600") {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-icon').innerText = icon;
+            document.getElementById('modal-btn').className = `w-full text-white px-6 py-3.5 rounded-xl font-bold text-lg transition shadow-md hover:shadow-lg ${btnBg}`;
+            modal?.classList.remove('hidden');
+            setTimeout(() => { document.getElementById('modal-box')?.classList.replace('scale-95', 'scale-100'); }, 10);
+        }
+        window.closeModal = function() {
+            document.getElementById('modal-box')?.classList.replace('scale-100', 'scale-95');
+            setTimeout(() => { document.getElementById('custom-modal')?.classList.add('hidden'); }, 200);
+        }
+
+        window.checkFlowchart = function() {
+            document.querySelectorAll('.fc-node').forEach(n => n.classList.remove('error'));
+            document.querySelectorAll('.connection-line').forEach(l => l.classList.remove('error-line'));
+            
+            const nodes = document.querySelectorAll('.fc-node');
+            if (nodes.length === 0) return window.showModal("ยังไม่ได้เริ่มเลย!", "ลากบล็อคมาวางบนกระดานก่อนนะ", "🤔", "bg-amber-500");
+
+            const allowedVocab = menus[activeMenu].vocab, expectedTransitions = menus[activeMenu].transitions;
+            let hasEmptyInput = false, hasInvalidVocab = false, nodeTexts = [];
+
+            nodes.forEach(node => {
+                const inputVal = node.querySelector('input').value.trim();
+                if(inputVal === "") { node.classList.add('error'); hasEmptyInput = true; } 
+                else {
+                    nodeTexts.push(inputVal);
+                    if (!allowedVocab.includes(inputVal)) { node.classList.add('error'); hasInvalidVocab = true; }
+                }
+            });
+
+            if (hasEmptyInput) return window.showModal("ลืมเติมคำศัพท์!", "มีบางบล็อคที่ยังไม่ได้พิมพ์ข้อความเลย", "✍️", "bg-amber-500");
+            if (hasInvalidVocab) return window.showModal("คำศัพท์ไม่ถูกต้อง!", "ต้องก็อปปี้ข้อความจาก 'คลังคำศัพท์' มาวางให้เป๊ะๆ เท่านั้นครับ ระบบถึงจะให้ผ่าน", "🔍", "bg-rose-500");
+            if (new Set(nodeTexts).size !== nodeTexts.length) return window.showModal("ห้ามใช้คำซ้ำ!", "กรุณาใช้คำศัพท์ 1 คำต่อ 1 บล็อคเท่านั้นครับ", "🚫", "bg-orange-500");
+            if (nodeTexts.length < allowedVocab.length) return window.showModal("ใช้บล็อคยังไม่ครบ!", "ดึงคำศัพท์จากฝั่งซ้ายมาใช้ให้ครบทุกขั้นตอนเลยนะ", "🧩", "bg-sky-500");
+            if (nodeTexts.length > allowedVocab.length) return window.showModal("มีบล็อคเกินมา!", "คุณสร้างบล็อคเยอะเกินไป ลองลบอันที่ไม่ใช้ออกนะ", "✂️", "bg-orange-500");
+
+            let hasWrongConnection = false;
+            connections.forEach(conn => {
+                const fromText = document.getElementById(conn.from).querySelector('input').value.trim();
+                const toText = document.getElementById(conn.to).querySelector('input').value.trim();
+                if (!expectedTransitions.some(exp => exp.from === fromText && exp.to === toText && exp.type === conn.fromType)) {
+                    conn.pathElement.classList.add('error-line'); document.getElementById(conn.from).classList.add('error'); document.getElementById(conn.to).classList.add('error');
+                    hasWrongConnection = true;
+                }
+            });
+
+            if (hasWrongConnection) return window.showModal("ลำดับยังไม่ถูกต้อง!", "มีการลากเส้นเชื่อมโยงผิดขั้นตอน (เส้นประสีแดงคือจุดที่ผิด)", "🔄", "bg-rose-500");
+            
+            let hasMissingOutput = false;
+            nodes.forEach(node => {
+                const text = node.querySelector('input').value.trim();
+                if (text !== "สิ้นสุด") {
+                    if (node.dataset.type === 'decision') {
+                        if (!connections.some(c => c.from === node.id && c.fromType === 'yes') || !connections.some(c => c.from === node.id && c.fromType === 'no')) { node.classList.add('error'); hasMissingOutput = true; }
+                    } else {
+                        if (!connections.some(c => c.from === node.id)) { node.classList.add('error'); hasMissingOutput = true; }
+                    }
+                }
+            });
+
+            if (hasMissingOutput) return window.showModal("ทางขาด!", "ยังมีบางบล็อคที่ไม่ได้ลากเส้นไปต่อ!", "🔌", "bg-rose-500");
+
+            window.showModal("ยอดเยี่ยมมาก! 🎉", "คุณวาด Flowchart ได้สมบูรณ์แบบ ลำดับขั้นตอนถูกต้อง 100%!", "🌟", "bg-emerald-500");
+            document.getElementById('modal-box').style.boxShadow = "0 0 60px rgba(16, 185, 129, 0.4)";
+
+            // บันทึกความสำเร็จลง Firebase (Flowchart)
+            if (!window.completedMenus) window.completedMenus = {};
+            if (!window.completedMenus[activeMenu] && window.fbDb && window.statsDocRef) {
+                window.fbSetDoc(window.statsDocRef, { totalSuccesses: window.fbIncrement(1) }, { merge: true });
+                window.completedMenus[activeMenu] = true;
+            }
+        }
+    </script>
+
+    <!-- =========================================================================
+         Firebase (โมดูลรวมศูนย์ ทำหน้าที่เป็นแกนหลัก)
+    ========================================================================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // สร้างตัวแปร Global ให้ React และ Vanilla JS เรียกใช้งาน
+        window.fbGetDoc = getDoc;
+        window.fbSetDoc = setDoc;
+        window.fbUpdateDoc = updateDoc;
+        window.fbIncrement = increment;
+        window.fbOnSnapshot = onSnapshot;
+        window.fbDoc = doc;
+
+        let customConfigObj = null;
+        const savedConfig = localStorage.getItem('customFirebaseConfig');
+        if (savedConfig) {
+            try {
+                const match = savedConfig.match(/\{[\s\S]*\}/);
+                if (match) customConfigObj = (new Function('return ' + match[0]))();
+            } catch (e) {}
+        }
+
+        if (!customConfigObj) {
+            customConfigObj = {
+                apiKey: "AIzaSyCHbo50NB_mMykzafOIl6El88Q_TmG7h1w",
+                authDomain: "icestd-28222.firebaseapp.com",
+                projectId: "icestd-28222",
+                storageBucket: "icestd-28222.firebasestorage.app",
+                messagingSenderId: "992681991853",
+                appId: "1:992681991853:web:aa4c74953895d48c2c7024",
+                measurementId: "G-3TFP9QQZ4T"
+            };
+        }
+
+        if (customConfigObj) {
+            try {
+                const app = initializeApp(customConfigObj);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+                
+                window.fbDb = db; 
+                window.appId = typeof __app_id !== 'undefined' ? __app_id : 'flowchart-app';
+                
+                // เอกสารสำหรับเก็บสถิติรวมของฝั่ง ม.ต้น
+                window.statsDocRef = doc(db, 'artifacts', window.appId, 'public', 'data', 'statistics', 'global');
+
+                const initAuth = async () => {
+                    try {
+                        let isSystemDefaultDb = false;
+                        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                            try {
+                                const systemConfig = JSON.parse(__firebase_config);
+                                if (systemConfig.projectId === customConfigObj.projectId) isSystemDefaultDb = true;
+                            } catch (e) {}
+                        }
+
+                        if (isSystemDefaultDb && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        const visitEl = document.getElementById('stat-visits');
+                        if(visitEl) visitEl.innerHTML = "<span class='text-xl text-rose-500'>⚠️ ขัดข้อง</span>";
+                        const successEl = document.getElementById('stat-success');
+                        if(successEl) successEl.innerHTML = "<span class='text-sm text-rose-500 font-bold'>กรุณาเปิด 'Anonymous' Auth<br>ใน Firebase Console</span>";
+                    }
+                };
+                
+                initAuth();
+
+                // คอยฟังการอัปเดตข้อมูลของ ม.ต้น แล้วนำไปแสดงผลที่ Dashboard ครูของ ม.ต้น
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) return;
+                    
+                    onSnapshot(window.statsDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const visitEl = document.getElementById('stat-visits');
+                            const successEl = document.getElementById('stat-success');
+                            if (visitEl && visitEl.innerText !== "⚠️ ขัดข้อง") visitEl.innerText = data.totalVisits || 0;
+                            if (successEl && !successEl.innerHTML.includes("Anonymous")) successEl.innerText = data.totalSuccesses || 0;
+                        }
+                    });
+                });
+
+            } catch (e) {
+                console.error("Firebase Initialization Error:", e);
+            }
+        }
+    </script>
+
+
+    <!-- =========================================================================
+         JAVASCRIPT ฝั่ง DIKW Pyramid (React App - ม.ปลาย)
+    ========================================================================= -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const AVG_DATA = {
+            sleep: 7,       
+            phone: 6.5,     
+            study: 1.5,     
+            exercise: 3,    
+            mood: 6.5,      
+            stress: 6.0     
+        };
+
+        const LABELS = {
+            sleep: 'การนอน (ชม./วัน)',
+            phone: 'เล่นโทรศัพท์ (ชม./วัน)',
+            study: 'อ่านหนังสือ/พัฒนาตนเอง (ชม./วัน)',
+            exercise: 'ออกกำลังกาย (วัน/สัปดาห์)',
+            mood: 'อารมณ์โดยรวม (1-10)',
+            stress: 'ความเครียด (1-10)'
+        };
+
+        const BarChart = ({ userData }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (chartInstance.current) chartInstance.current.destroy();
+
+                const ctx = chartRef.current.getContext('2d');
+                const labels = Object.values(LABELS);
+                const userValues = [userData.sleep, userData.phone, userData.study, userData.exercise, userData.mood, userData.stress];
+                const avgValues = [AVG_DATA.sleep, AVG_DATA.phone, AVG_DATA.study, AVG_DATA.exercise, AVG_DATA.mood, AVG_DATA.stress];
+
+                chartInstance.current = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'ข้อมูลของคุณ', data: userValues, backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgb(16, 185, 129)', borderWidth: 1, borderRadius: 4 },
+                            { label: 'ค่าเฉลี่ยบุคคลทั่วไป', data: avgValues, backgroundColor: 'rgba(203, 213, 225, 0.6)', borderColor: 'rgb(148, 163, 184)', borderWidth: 1, borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { family: 'Noto Sans Thai' } } } }, scales: { y: { beginAtZero: true, ticks: { font: { family: 'Noto Sans Thai' } } }, x: { ticks: { font: { family: 'Noto Sans Thai' } } } } }
+                });
+
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+            }, [userData]);
+
+            return <div className="h-64 md:h-80 w-full"><canvas ref={chartRef}></canvas></div>;
+        };
+
+        const RadarChart = ({ userData }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (chartInstance.current) chartInstance.current.destroy();
+
+                const ctx = chartRef.current.getContext('2d');
+                const labels = ['การนอน', 'โทรศัพท์', 'พัฒนาตนเอง', 'ออกกำลังกาย', 'อารมณ์', 'ความเครียด'];
+                const userValues = [userData.sleep, userData.phone, userData.study, userData.exercise, userData.mood, userData.stress];
+                const avgValues = [AVG_DATA.sleep, AVG_DATA.phone, AVG_DATA.study, AVG_DATA.exercise, AVG_DATA.mood, AVG_DATA.stress];
+
+                chartInstance.current = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'ตัวคุณ', data: userValues, backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: 'rgb(245, 158, 11)', pointBackgroundColor: 'rgb(245, 158, 11)', borderWidth: 2 },
+                            { label: 'ค่าเฉลี่ยบุคคลทั่วไป', data: avgValues, backgroundColor: 'rgba(148, 163, 184, 0.2)', borderColor: 'rgb(148, 163, 184)', pointBackgroundColor: 'rgb(148, 163, 184)', borderWidth: 2, borderDash: [5, 5] }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Noto Sans Thai' } } } }, scales: { r: { beginAtZero: true, suggestedMax: 10, ticks: { font: { family: 'Noto Sans Thai' }, stepSize: 2 }, pointLabels: { font: { family: 'Noto Sans Thai', size: 12 } } } } }
+                });
+
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+            }, [userData]);
+
+            return <div className="h-64 md:h-80 w-full"><canvas ref={chartRef}></canvas></div>;
+        };
+
+        // หน้า Dashboard ครูสำหรับมัธยมปลาย
+        const TeacherDashboardHS = ({ onBack, stats }) => {
+            if (!stats) return <div className="p-10 text-center text-slate-500">กำลังเชื่อมต่อฐานข้อมูล...</div>;
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayVisits = stats.dailyVisits?.[today] || 0;
+            const totalSubs = stats.totalSubmissions || 0;
+
+            const avgSleep = totalSubs ? (stats.dataSums?.sleep / totalSubs).toFixed(1) : 0;
+            const avgPhone = totalSubs ? (stats.dataSums?.phone / totalSubs).toFixed(1) : 0;
+            const avgStress = totalSubs ? (stats.dataSums?.stress / totalSubs).toFixed(1) : 0;
+            const avgMood = totalSubs ? (stats.dataSums?.mood / totalSubs).toFixed(1) : 0;
+
+            // ดึงและเรียงลำดับวิชาทั้งหมดจากมากไปน้อย
+            let sortedSubjects = [];
+            if (stats.subjects) {
+                sortedSubjects = Object.entries(stats.subjects)
+                    .map(([subject, count]) => ({ subject, count }))
+                    .sort((a, b) => b.count - a.count);
+            }
+
+            return (
+                <div className="bg-slate-50 min-h-screen p-6 relative flex flex-col items-center">
+                    <button onClick={onBack} className="absolute top-6 left-6 text-slate-600 hover:text-indigo-600 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-slate-200 font-bold flex items-center gap-2 transition hover:scale-105 z-10">
+                        ⬅️ กลับไปหน้าแบบสอบถาม
+                    </button>
+                    
+                    <div className="bg-white p-10 rounded-[2rem] shadow-xl max-w-4xl w-full border border-slate-100 mt-16 md:mt-0">
+                        <h1 className="text-3xl font-bold text-slate-800 mb-2 text-center">📊 แผงควบคุมสำหรับครูผู้สอน (ม.ปลาย)</h1>
+                        <p className="text-slate-500 mb-8 text-center">สถิติข้อมูลพฤติกรรมของนักเรียนโดยรวม</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-indigo-50/50 py-6 px-8 rounded-2xl border border-indigo-100 flex flex-col items-center justify-center">
+                                <div className="text-5xl font-black text-indigo-600 drop-shadow-sm">{todayVisits}</div>
+                                <div className="text-slate-600 font-medium mt-2">ยอดเข้าใช้งานวันนี้</div>
+                            </div>
+                            <div className="bg-emerald-50/50 py-6 px-8 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center">
+                                <div className="text-5xl font-black text-emerald-600 drop-shadow-sm">{totalSubs}</div>
+                                <div className="text-slate-600 font-medium mt-2">จำนวนผู้ที่ส่งข้อมูลสำเร็จรวม</div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mb-4 mt-10">
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">📈 ภาพรวมพฤติกรรมนักเรียนเฉลี่ย</h3>
+                            <div className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                                วิเคราะห์จากข้อมูลทั้งหมด {totalSubs} คน
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-xs text-slate-500 mb-1">การนอนเฉลี่ย</div>
+                                <div className="text-2xl font-bold text-slate-800">{avgSleep} <span className="text-sm font-normal">ชม.</span></div>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-xs text-slate-500 mb-1">เล่นโทรศัพท์เฉลี่ย</div>
+                                <div className="text-2xl font-bold text-slate-800">{avgPhone} <span className="text-sm font-normal">ชม.</span></div>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-xs text-slate-500 mb-1">ความเครียดเฉลี่ย</div>
+                                <div className="text-2xl font-bold text-rose-500">{avgStress} <span className="text-sm font-normal text-slate-500">/ 10</span></div>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-xs text-slate-500 mb-1">อารมณ์ดีเฉลี่ย</div>
+                                <div className="text-2xl font-bold text-emerald-500">{avgMood} <span className="text-sm font-normal text-slate-500">/ 10</span></div>
+                            </div>
+                        </div>
+
+                        <div className="bg-amber-50 p-6 md:p-8 rounded-2xl border border-amber-100">
+                            <div className="flex justify-between items-end mb-6">
+                                <div className="text-lg text-amber-800 font-bold flex items-center gap-2">⭐ อันดับหมวดวิชาที่นักเรียนสนใจ</div>
+                                <div className="text-sm text-amber-700 font-medium">จากนักเรียน {totalSubs} คน</div>
+                            </div>
+                            <div className="space-y-4">
+                                {sortedSubjects.length > 0 ? sortedSubjects.map((item, index) => {
+                                    const maxCount = sortedSubjects[0].count; // ใช้ค่ามากสุดเป็น 100%
+                                    const percentage = Math.max((item.count / maxCount) * 100, 5); // อย่างน้อย 5% ให้เห็นแถบสี
+                                    return (
+                                        <div key={index} className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-6 md:w-8 text-center font-bold text-amber-600 text-sm md:text-base">#{index + 1}</div>
+                                            <div className="flex-1 bg-white rounded-full h-8 overflow-hidden flex items-center relative border border-amber-200">
+                                                <div className="bg-amber-300 h-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
+                                                <div className="absolute left-4 text-xs md:text-sm font-semibold text-slate-800 truncate pr-2">{item.subject}</div>
+                                            </div>
+                                            <div className="w-12 md:w-16 text-right font-bold text-amber-700 text-sm md:text-base">{item.count} คน</div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <div className="text-center text-amber-600/70 py-6 font-medium">ยังไม่มีข้อมูลนักเรียน</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState(0);
+            const [formData, setFormData] = useState({ sleep: '', phone: '', study: '', exercise: '', mood: 5, stress: 5, subject: '' });
+            const [hasSubmitted, setHasSubmitted] = useState(false);
+            const [showDashboard, setShowDashboard] = useState(false);
+            const [hsStats, setHsStats] = useState(null);
+
+            // ใช้สำหรับให้ Modal ของ HTML ยิงมาสั่งเปลี่ยนหน้าเป็น Dashboard ของ ม.ปลาย
+            useEffect(() => {
+                window.triggerHSDashboard = () => setShowDashboard(true);
+            }, []);
+
+            useEffect(() => {
+                const initFirebaseSync = async () => {
+                    if (!window.fbDb) { setTimeout(initFirebaseSync, 500); return; }
+                    
+                    const statsRef = window.fbDoc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'hs_statistics', 'global');
+
+                    window.fbOnSnapshot(statsRef, (docSnap) => {
+                        if (docSnap.exists()) { setHsStats(docSnap.data()); }
+                    });
+                };
+                initFirebaseSync();
+            }, []);
+
+            const handleDataSubmit = async () => {
+                setActiveTab(1);
+                if (hasSubmitted || !window.fbDb) return;
+                
+                const statsRef = window.fbDoc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'hs_statistics', 'global');
+                try {
+                    await window.fbSetDoc(statsRef, {
+                        dataSums: {
+                            sleep: window.fbIncrement(formData.sleep),
+                            phone: window.fbIncrement(formData.phone),
+                            study: window.fbIncrement(formData.study),
+                            exercise: window.fbIncrement(formData.exercise),
+                            mood: window.fbIncrement(formData.mood),
+                            stress: window.fbIncrement(formData.stress)
+                        },
+                        totalSubmissions: window.fbIncrement(1),
+                        subjects: {
+                            [formData.subject]: window.fbIncrement(1)
+                        }
+                    }, { merge: true });
+                    setHasSubmitted(true);
+                } catch(e) { console.error("Error saving student data", e); }
+            };
+
+            const isDataComplete = () => {
+                return formData.sleep !== '' && formData.phone !== '' && formData.study !== '' && formData.exercise !== '' && formData.subject !== '';
+            };
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: name === 'subject' ? value : Number(value) }));
+            };
+
+            const TABS = [
+                { id: 'data', title: 'Data', label: 'ข้อมูล', color: 'bg-blue-500', lightColor: 'bg-blue-50', textColor: 'text-blue-700', desc: 'ตัวเลขดิบที่ยังไม่มีความหมาย (Raw Data)' },
+                { id: 'info', title: 'Information', label: 'สารสนเทศ', color: 'bg-emerald-500', lightColor: 'bg-emerald-50', textColor: 'text-emerald-700', desc: 'นำข้อมูลมาจัดระเบียบให้มีความหมายและเปรียบเทียบได้' },
+                { id: 'knowledge', title: 'Knowledge', label: 'ความรู้', color: 'bg-amber-500', lightColor: 'bg-amber-50', textColor: 'text-amber-700', desc: 'เชื่อมสารสนเทศกับบริบท ทำให้เห็นความสัมพันธ์และรูปแบบ (Insights)' },
+                { id: 'wisdom', title: 'Wisdom', label: 'ภูมิปัญญา', color: 'bg-purple-500', lightColor: 'bg-purple-50', textColor: 'text-purple-700', desc: 'นำความรู้มาตัดสินใจและปรับพฤติกรรมในชีวิตจริงได้' }
+            ];
+
+            const currentConfig = TABS[activeTab];
+
+            const renderDataTab = () => (
+                <div className="slide-in grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-slate-700">กรอกข้อมูลกิจวัตรของคุณ</h3>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">การนอน (ชั่วโมง/วัน)</label><input type="number" name="sleep" min="0" max="24" value={formData.sleep} onChange={handleInputChange} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="เช่น 7" /></div>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">เล่นโทรศัพท์/หน้าจอ (ชั่วโมง/วัน)</label><input type="number" name="phone" min="0" max="24" value={formData.phone} onChange={handleInputChange} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="เช่น 6" /></div>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">อ่านหนังสือ/เรียนรู้เพิ่มเติม (ชั่วโมง/วัน)</label><input type="number" name="study" min="0" max="24" value={formData.study} onChange={handleInputChange} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="เช่น 2" /></div>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">ออกกำลังกาย (วัน/สัปดาห์)</label><input type="number" name="exercise" min="0" max="7" value={formData.exercise} onChange={handleInputChange} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="เช่น 3" /></div>
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-slate-700 md:opacity-0 hidden md:block">ส่วนที่ 2</h3>
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <label className="block text-sm font-medium text-slate-600 mb-3">อารมณ์โดยรวมช่วงนี้ (1 แย่มาก - 10 ดีมาก)</label>
+                            <div className="flex items-center gap-4"><span className="text-slate-400 text-sm">1</span><input type="range" name="mood" min="1" max="10" value={formData.mood} onChange={handleInputChange} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500" /><span className="text-blue-600 font-bold w-6 text-right">{formData.mood}</span></div>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <label className="block text-sm font-medium text-slate-600 mb-3">ความเครียดจากการเรียน/งาน (1 ชิลมาก - 10 เครียดจัด)</label>
+                            <div className="flex items-center gap-4"><span className="text-slate-400 text-sm">1</span><input type="range" name="stress" min="1" max="10" value={formData.stress} onChange={handleInputChange} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500" /><span className="text-red-500 font-bold w-6 text-right">{formData.stress}</span></div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-600 mb-1">ความสนใจพิเศษ / วิชาที่ชอบ</label>
+                            <select name="subject" value={formData.subject} onChange={handleInputChange} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
+                                <option value="" disabled>-- เลือกเรื่องที่สนใจ --</option><option value="วิทยาศาสตร์/คณิตศาสตร์">วิทยาศาสตร์ / คณิตศาสตร์</option><option value="ภาษาและการสื่อสาร">ภาษาและการสื่อสาร</option><option value="ศิลปะ/การออกแบบ">ศิลปะ / การออกแบบ</option><option value="ดนตรี/กีฬา">ดนตรี / กีฬา</option><option value="เทคโนโลยี/คอมพิวเตอร์">เทคโนโลยี / คอมพิวเตอร์</option><option value="สังคม/ประวัติศาสตร์">สังคม / ประวัติศาสตร์</option><option value="ธุรกิจ/การจัดการ">ธุรกิจ / การจัดการ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="col-span-1 md:col-span-2 mt-6 flex justify-end">
+                        <button onClick={handleDataSubmit} disabled={!isDataComplete()} className={`px-8 py-3 rounded-lg font-medium transition-all ${isDataComplete() ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>แปลงข้อมูลเป็น Information ➔</button>
+                    </div>
+                </div>
+            );
+
+            const renderInfoTab = () => (
+                <div className="slide-in space-y-8">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><span className="w-2 h-6 bg-emerald-500 rounded-full block"></span>เปรียบเทียบตัวคุณ vs ค่าเฉลี่ยบุคคลทั่วไป</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {Object.keys(AVG_DATA).map(key => {
+                                const userVal = formData[key], avgVal = AVG_DATA[key], diff = userVal - avgVal;
+                                return (
+                                    <div key={key} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
+                                        <div className="text-xs text-slate-500 mb-1">{LABELS[key]}</div>
+                                        <div className="flex items-end gap-2"><span className="text-2xl font-bold text-slate-800">{userVal}</span><span className="text-sm text-slate-400 mb-1">/ {avgVal} (เฉลี่ย)</span></div>
+                                        <div className={`text-xs font-medium mt-2 flex items-center gap-1 ${diff === 0 ? 'text-slate-500' : diff > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>{diff === 0 ? 'เท่ากับค่าเฉลี่ย' : diff > 0 ? `▲ สูงกว่าเฉลี่ย ${Math.abs(diff).toFixed(1)}` : `▼ ต่ำกว่าเฉลี่ย ${Math.abs(diff).toFixed(1)}`}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><span className="w-2 h-6 bg-emerald-500 rounded-full block"></span>กราฟแท่ง (Bar Chart) จัดระเบียบข้อมูล</h3>
+                        <BarChart userData={formData} />
+                    </div>
+                    <div className="flex justify-between items-center mt-6">
+                        <button onClick={() => setActiveTab(0)} className="px-6 py-2 rounded-lg text-slate-500 hover:bg-slate-100 transition">กลับไปดู Data</button>
+                        <button onClick={() => setActiveTab(2)} className="px-8 py-3 rounded-lg font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-all">วิเคราะห์หา Knowledge ➔</button>
+                    </div>
+                </div>
+            );
+
+            const renderKnowledgeTab = () => {
+                const insights = [];
+                if (formData.stress > AVG_DATA.stress && formData.sleep < AVG_DATA.sleep) insights.push({ title: 'ความเครียด vs การพักผ่อน', desc: 'คุณมีความเครียดสูงกว่าเฉลี่ย และนอนน้อยกว่าเฉลี่ย เป็นไปได้มากว่า "การอดนอนส่งผลให้ความเครียดพุ่งสูงขึ้น"', type: 'warning' });
+                else if (formData.stress <= AVG_DATA.stress && formData.sleep >= AVG_DATA.sleep) insights.push({ title: 'ความเครียด vs การพักผ่อน', desc: 'คุณนอนหลับเพียงพอ ซึ่งมีความสัมพันธ์โดยตรงกับระดับความเครียดที่ควบคุมได้ดี', type: 'positive' });
+
+                if (formData.phone > AVG_DATA.phone && formData.study < AVG_DATA.study) insights.push({ title: 'หน้าจอ vs การพัฒนาตนเอง', desc: 'เวลาอยู่หน้าจอที่สูงกว่าเฉลี่ย สัมพันธ์กับการใช้เวลาทบทวนบทเรียนที่ลดลง อาจเกิดภาวะพฤติกรรมทดแทน', type: 'warning' });
+
+                if (formData.exercise >= 3 && formData.mood >= 7) insights.push({ title: 'การเคลื่อนไหว vs อารมณ์', desc: 'กิจกรรมทางกายของคุณส่งผลให้ร่างกายหลั่งเอนดอร์ฟิน สอดคล้องกับคะแนนอารมณ์ที่อยู่ในเกณฑ์ดี', type: 'positive' });
+                else if (formData.exercise < 2 && formData.mood <= 5) insights.push({ title: 'การเคลื่อนไหว vs อารมณ์', desc: 'การขาดการออกกำลังกายอาจเป็นปัจจัยหนึ่งที่ทำให้อารมณ์โดยรวมไม่แจ่มใสเท่าที่ควร', type: 'warning' });
+
+                if (formData.study > 4 && formData.stress > 7) insights.push({ title: 'ความทุ่มเท vs ภาวะหมดไฟ (Burnout)', desc: 'คุณใช้เวลาศึกษาทบทวนมาก แต่ก็ตามมาด้วยความเครียดที่สูงมาก สะท้อนถึงความสัมพันธ์เชิงลบเมื่อขาดสมดุล', type: 'warning' });
+
+                if (insights.length < 2) {
+                    insights.push({ title: 'ความสนใจและพฤติกรรม', desc: `คุณสนใจในเรื่อง ${formData.subject} รูปแบบการใช้ชีวิตของคุณตอนนี้เป็นบริบทเฉพาะที่ส่งผลต่อการโฟกัสในสิ่งที่คุณถนัด`, type: 'neutral' });
+                    insights.push({ title: 'ภาพรวมพฤติกรรม (General Pattern)', desc: 'เมื่อนำข้อมูลทุกมิติมาผูกโยงกัน (Radar Chart) จะเห็นได้ว่าคุณมีจุดเด่นและรูปแบบการใช้ชีวิตที่ต่างจากคนทั่วไป', type: 'neutral' });
+                }
+
+                return (
+                    <div className="slide-in grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                            <h3 className="text-lg font-bold text-slate-700 mb-2 flex items-center gap-2"><span className="w-2 h-6 bg-amber-500 rounded-full block"></span>มุมมองแบบองค์รวม (Radar Chart)</h3>
+                            <p className="text-sm text-slate-500 mb-4">กราฟนี้ช่วยให้เห็นความสัมพันธ์ของตัวแปรหลายมิติพร้อมกัน (Multivariate Analysis)</p>
+                            <div className="flex-grow flex items-center justify-center"><RadarChart userData={formData} /></div>
+                        </div>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2"><span className="w-2 h-6 bg-amber-500 rounded-full block"></span>ค้นพบความสัมพันธ์ (Data Insights)</h3>
+                            {insights.map((insight, idx) => (
+                                <div key={idx} className={`p-4 rounded-xl border-l-4 ${insight.type === 'warning' ? 'bg-orange-50 border-orange-500' : insight.type === 'positive' ? 'bg-green-50 border-green-500' : 'bg-blue-50 border-blue-500'}`}>
+                                    <h4 className="font-bold text-slate-800 mb-1">{insight.title}</h4>
+                                    <p className="text-sm text-slate-600 leading-relaxed">{insight.desc}</p>
+                                </div>
+                            ))}
+                            <div className="mt-8 p-5 bg-amber-50 rounded-xl border border-amber-200"><p className="text-sm text-amber-800"><strong>ข้อสังเกต:</strong> ในขั้น <em>Knowledge</em> เราไม่ได้มองข้อมูลทีละตัวแล้ว แต่นำมาเชื่อมโยงกัน เพื่อหาเหตุและผลที่ซ่อนอยู่</p></div>
+                            <div className="flex justify-between items-center mt-6">
+                                <button onClick={() => setActiveTab(1)} className="px-6 py-2 rounded-lg text-slate-500 hover:bg-slate-100 transition">กลับไปดู Information</button>
+                                <button onClick={() => setActiveTab(3)} className="px-8 py-3 rounded-lg font-medium bg-amber-500 text-white hover:bg-amber-600 shadow-md transition-all">เปลี่ยนเป็น Wisdom ➔</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderWisdomTab = () => {
+                const advices = [];
+                if (formData.sleep < 7) advices.push({ title: 'เพิ่มคุณภาพการนอน', action: 'คุณควรตั้งเป้าหมายเข้านอนให้เร็วขึ้น 30 นาที และงดเล่นหน้าจอก่อนนอน เพื่อลดระดับความเครียดและเพิ่มสมาธิ' });
+                if (formData.stress > 6) advices.push({ title: 'จัดการความเครียดเชิงรุก', action: `จากความเครียดที่ระดับ ${formData.stress} แนะนำให้หาเวลา "Unplug" ทำสิ่งที่ชอบ หรือพูดคุยระบายความรู้สึก เพื่อป้องกันภาวะหมดไฟ` });
+                if (formData.phone > 6.5) advices.push({ title: 'ทำ Digital Detox', action: 'ลองใช้ฟีเจอร์ Screen Time จำกัดการใช้งานโซเชียลมีเดียลง 1 ชั่วโมง แล้วนำเวลานั้นไปศึกษาเรื่อง ' + formData.subject + ' เพิ่มเติม' });
+                if (formData.exercise < 3) advices.push({ title: 'ขยับร่างกายเพื่อสมอง', action: 'เริ่มจากการเดินหรือยืดเหยียดร่างกายง่ายๆ วันละ 15 นาที แค่ 3 วันต่อสัปดาห์ จะช่วยกระตุ้นการไหลเวียนเลือด' });
+                if (advices.length === 0) advices.push({ title: 'รักษามาตรฐานที่ดีเยี่ยม', action: 'พฤติกรรมโดยรวมของคุณมีความสมดุลที่ดีมาก ขอให้รักษาการแบ่งเวลาแบบนี้ต่อไป และแบ่งปันเทคนิคนี้ให้คนรอบข้างด้วย!' });
+
+                return (
+                    <div className="slide-in space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="col-span-1 md:col-span-2 space-y-4">
+                                <h3 className="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2"><span className="w-2 h-6 bg-purple-500 rounded-full block"></span>แนวทางปรับพฤติกรรม (Actionable Advice)</h3>
+                                <div className="grid gap-4">
+                                    {advices.map((adv, idx) => (
+                                        <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold shrink-0">{idx + 1}</div>
+                                                <div><h4 className="font-bold text-slate-800 text-lg mb-1">{adv.title}</h4><p className="text-slate-600">{adv.action}</p></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="col-span-1 space-y-6">
+                                <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+                                    <h3 className="font-bold text-xl mb-4">สรุปการเดินทาง (DIKW)</h3>
+                                    <ul className="space-y-4 text-sm">
+                                        <li className="flex gap-3 items-start"><div className="bg-white/20 px-2 py-1 rounded text-xs font-bold">D</div><span>คุณเริ่มจาก <strong>ตัวเลขดิบ</strong> ที่ไม่มีความหมาย เช่น ({formData.sleep}, {formData.phone})</span></li>
+                                        <li className="flex gap-3 items-start"><div className="bg-white/20 px-2 py-1 rounded text-xs font-bold">I</div><span>เรานำมาสร้างกราฟ ให้คุณเห็นว่ามัน <strong>มากหรือน้อย</strong> กว่าคนทั่วไป</span></li>
+                                        <li className="flex gap-3 items-start"><div className="bg-white/20 px-2 py-1 rounded text-xs font-bold">K</div><span>เราเชื่อมโยงข้อมูล เพื่อหา <strong>ความสัมพันธ์</strong> ระหว่างตัวแปร</span></li>
+                                        <li className="flex gap-3 items-start"><div className="bg-white/20 px-2 py-1 rounded text-xs font-bold">W</div><span>และสุดท้าย คุณได้ <strong>แนวทางปฏิบัติจริง</strong> เพื่อแก้ปัญหาชีวิต</span></li>
+                                    </ul>
+                                </div>
+                                <div className="flex justify-center">
+                                    <button onClick={() => { setFormData({ sleep: '', phone: '', study: '', exercise: '', mood: 5, stress: 5, subject: '' }); setActiveTab(0); setHasSubmitted(false); }} className="w-full py-3 rounded-lg font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 transition border border-purple-200">เริ่มทำใหม่อีกครั้ง</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            if (showDashboard) {
+                return <TeacherDashboardHS onBack={() => setShowDashboard(false)} stats={hsStats} />;
+            }
+
+            return (
+                <div className="min-h-screen pb-12 flex flex-col items-center">
+                    <div className={`w-full ${currentConfig.color} transition-colors duration-500 text-white pt-10 pb-16 px-4 relative`}>
+                        <button onClick={() => window.showLevelSelection()} className="absolute top-4 left-4 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-xl font-bold transition backdrop-blur-sm flex items-center gap-2 shadow-sm text-sm">
+                            <span>⬅️</span> กลับหน้าหลัก
+                        </button>
+                        <button onClick={() => window.showTeacherLogin()} className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-xl font-bold transition backdrop-blur-sm flex items-center gap-2 shadow-sm text-sm">
+                            🔒 ระบบครูผู้สอน
+                        </button>
+
+                        <div className="max-w-4xl mx-auto mt-10">
+                            <h1 className="text-3xl md:text-4xl font-bold mb-2">วิทยาการคำนวณ: หน่วยการเรียนรู้ที่ 1</h1>
+                            <p className="text-xl font-medium text-white/90">เรื่อง ข้อมูลมีคุณค่า (DIKW Pyramid)</p>
+                        </div>
+                    </div>
+                    <div className="max-w-4xl w-full px-4 -mt-10">
+                        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                            <div className="flex border-b border-slate-100 overflow-x-auto hide-scrollbar">
+                                {TABS.map((tab, idx) => (
+                                    <button key={tab.id} disabled={idx > activeTab} className={`flex-1 min-w-[120px] py-4 px-2 text-center transition relative ${idx === activeTab ? currentConfig.textColor + ' ' + currentConfig.lightColor : idx < activeTab ? 'text-slate-600 hover:bg-slate-50 cursor-pointer' : 'text-slate-300 cursor-not-allowed'}`} onClick={() => setActiveTab(idx)}>
+                                        <div className="text-xs font-bold uppercase tracking-wider mb-1">Step {idx + 1}</div>
+                                        <div className="font-semibold">{tab.title}</div>
+                                        <div className="text-sm opacity-80">{tab.label}</div>
+                                        {idx === activeTab && <div className={`absolute bottom-0 left-0 w-full h-1 ${currentConfig.color}`}></div>}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className={`${currentConfig.lightColor} ${currentConfig.textColor} p-4 text-center border-b border-slate-100/50 transition-colors duration-300`}><p className="font-medium">💡 นิยามชั้นนี้: {currentConfig.desc}</p></div>
+                            <div className="p-6 md:p-8">
+                                {activeTab === 0 && renderDataTab()}
+                                {activeTab === 1 && renderInfoTab()}
+                                {activeTab === 2 && renderKnowledgeTab()}
+                                {activeTab === 3 && renderWisdomTab()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const mountApp = () => {
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(<App />);
+            } else {
+                setTimeout(mountApp, 50); 
+            }
+        };
+        
+        mountApp();
+    </script>
+</body>
+</html>
