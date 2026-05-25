@@ -298,33 +298,7 @@
             </div>
         </div>
 
-        <!-- Modals สำหรับ Flowchart (Login ครู & แจ้งเตือน) -->
-        <div id="teacher-login-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
-            <div class="bg-white p-8 rounded-[2rem] max-w-sm w-full mx-4 shadow-2xl text-center border border-slate-100">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 text-slate-500 rounded-full mb-4 text-3xl">🔐</div>
-                <h3 class="text-2xl font-bold text-slate-800 mb-6">เข้าสู่ระบบครูผู้สอน</h3>
-                <div class="flex flex-col gap-5 text-left">
-                    <div><label class="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Username</label><input type="text" id="teacher-user" class="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="ระบุชื่อผู้ใช้"></div>
-                    <div><label class="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Password</label><input type="password" id="teacher-pass" class="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="ระบุรหัสผ่าน"></div>
-                </div>
-                <div class="mt-8 flex gap-3">
-                    <button onclick="submitTeacherLogin()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md">เข้าสู่ระบบ</button>
-                    <button onclick="closeTeacherLogin()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-bold transition">ยกเลิก</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
-            <div class="bg-white p-8 rounded-[2rem] max-w-md w-full mx-4 text-center shadow-2xl transform transition-transform scale-95 border border-white" id="modal-box">
-                <div id="modal-icon" class="text-7xl mb-5 drop-shadow-md">⚠️</div>
-                <h3 id="modal-title" class="text-2xl font-bold text-slate-800 mb-3 tracking-tight">แจ้งเตือน</h3>
-                <p id="modal-message" class="text-slate-500 mb-8 text-lg leading-relaxed">ข้อความรายละเอียด</p>
-                <button onclick="closeModal()" id="modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3.5 rounded-xl font-bold text-lg transition shadow-md">เข้าใจแล้ว</button>
-            </div>
-        </div>
-
     </div>
-
 
     <!-- =========================================================================
          แอปพลิเคชัน มัธยมศึกษาตอนปลาย (DIKW Pyramid - React App)
@@ -333,13 +307,39 @@
         <div id="root"></div>
     </div>
 
+    <!-- =========================================================================
+         Modals สำหรับใช้งานร่วมกัน (Login ครุ & แจ้งเตือน)
+    ========================================================================= -->
+    <div id="teacher-login-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white p-8 rounded-[2rem] max-w-sm w-full mx-4 shadow-2xl text-center border border-slate-100">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 text-slate-500 rounded-full mb-4 text-3xl">🔐</div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-6">เข้าสู่ระบบครูผู้สอน</h3>
+            <div class="flex flex-col gap-5 text-left">
+                <div><label class="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Username</label><input type="text" id="teacher-user" class="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="ระบุชื่อผู้ใช้"></div>
+                <div><label class="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Password</label><input type="password" id="teacher-pass" class="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="ระบุรหัสผ่าน"></div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="submitTeacherLogin()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md">เข้าสู่ระบบ</button>
+                <button onclick="closeTeacherLogin()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-bold transition">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white p-8 rounded-[2rem] max-w-md w-full mx-4 text-center shadow-2xl transform transition-transform scale-95 border border-white" id="modal-box">
+            <div id="modal-icon" class="text-7xl mb-5 drop-shadow-md">⚠️</div>
+            <h3 id="modal-title" class="text-2xl font-bold text-slate-800 mb-3 tracking-tight">แจ้งเตือน</h3>
+            <p id="modal-message" class="text-slate-500 mb-8 text-lg leading-relaxed">ข้อความรายละเอียด</p>
+            <button onclick="closeModal()" id="modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3.5 rounded-xl font-bold text-lg transition shadow-md">เข้าใจแล้ว</button>
+        </div>
+    </div>
+
 
     <!-- =========================================================================
          JAVASCRIPT ฝั่ง Navigation และ Flowchart (Vanilla JS)
     ========================================================================= -->
     <script>
         // --- Navigation ---
-        // ป้องกันบั๊ก classList is null โดยใช้ Optional Chaining (?.) หรือเช็คตัวแปรเสมอ
         window.showLevelSelection = function() {
             document.getElementById('screen-main-select')?.classList.remove('hidden-screen');
             document.getElementById('wrapper-ms')?.classList.add('hidden-screen');
@@ -354,12 +354,31 @@
             document.getElementById('screen-menu')?.classList.remove('hidden-screen');
             document.getElementById('screen-workspace')?.classList.add('hidden-screen');
             document.getElementById('screen-teacher-dashboard')?.classList.add('hidden-screen');
+
+            // บันทึกยอดวิว ม.ต้น
+            if (!sessionStorage.getItem('ms_visited') && window.fbDb) {
+                sessionStorage.setItem('ms_visited', 'true');
+                try { window.fbUpdateDoc(window.statsDocRef, { totalVisits: window.fbIncrement(1) }); } 
+                catch (e) { window.fbSetDoc(window.statsDocRef, { totalVisits: 1, totalSuccesses: 0 }, { merge: true }); }
+            }
         }
 
         window.openHighSchool = function() {
             document.getElementById('screen-main-select')?.classList.add('hidden-screen');
             document.getElementById('wrapper-ms')?.classList.add('hidden-screen');
             document.getElementById('wrapper-hs')?.classList.remove('hidden-screen');
+
+            // บันทึกยอดวิว ม.ปลาย (รายวัน)
+            if (!sessionStorage.getItem('hs_visited') && window.fbDb) {
+                sessionStorage.setItem('hs_visited', 'true');
+                const today = new Date().toISOString().split('T')[0];
+                const hsStatsRef = window.fbDoc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'hs_statistics', 'global');
+                try {
+                    window.fbSetDoc(hsStatsRef, {
+                        dailyVisits: { [today]: window.fbIncrement(1) }
+                    }, { merge: true });
+                } catch (e) {}
+            }
         }
 
         // --- Flowchart Logic ---
@@ -414,13 +433,11 @@
         let connections = []; 
         let isWiring = false, wiringStartPort = null, tempPath = null, draggedHandleConn = null;
 
-        // รอจนกว่าหน้าเว็บโหลดเสร็จค่อยผูก Event
         window.addEventListener('DOMContentLoaded', () => {
             const canvasContainer = document.getElementById('canvas-container');
             const workspace = document.getElementById('workspace');
-            const svgLayer = document.getElementById('svg-layer');
 
-            if(!canvasContainer || !workspace || !svgLayer) return;
+            if(!canvasContainer || !workspace) return;
 
             canvasContainer.addEventListener('wheel', (e) => {
                 if (e.ctrlKey || e.metaKey) return;
@@ -477,14 +494,21 @@
             });
         });
 
+        // ใช้งาน Modal ร่วมกันทั้งแอป
         window.submitTeacherLogin = () => {
             const user = document.getElementById('teacher-user').value;
             const pass = document.getElementById('teacher-pass').value;
             
             if (user === 'staff' && pass === '47000') {
                 window.closeTeacherLogin();
-                document.getElementById('screen-menu')?.classList.add('hidden-screen');
-                document.getElementById('screen-teacher-dashboard')?.classList.remove('hidden-screen');
+                // เปลี่ยนหน้าของ MS Dashboard ถ้าเรียกมาจาก MS
+                if(!document.getElementById('wrapper-ms').classList.contains('hidden-screen')) {
+                    document.getElementById('screen-menu')?.classList.add('hidden-screen');
+                    document.getElementById('screen-teacher-dashboard')?.classList.remove('hidden-screen');
+                } else {
+                    // ของ HS Dashboard 
+                    window.triggerHSDashboard(); 
+                }
                 
                 const savedConfig = localStorage.getItem('customFirebaseConfig');
                 if(savedConfig) document.getElementById('firebase-config-input').value = savedConfig;
@@ -793,22 +817,24 @@
             window.showModal("ยอดเยี่ยมมาก! 🎉", "คุณวาด Flowchart ได้สมบูรณ์แบบ ลำดับขั้นตอนถูกต้อง 100%!", "🌟", "bg-emerald-500");
             document.getElementById('modal-box').style.boxShadow = "0 0 60px rgba(16, 185, 129, 0.4)";
 
+            // บันทึกความสำเร็จลง Firebase (Flowchart)
             if (!window.completedMenus) window.completedMenus = {};
-            if (!window.completedMenus[activeMenu] && window.recordSuccess) {
-                window.recordSuccess(); window.completedMenus[activeMenu] = true;
+            if (!window.completedMenus[activeMenu] && window.fbDb && window.statsDocRef) {
+                window.fbSetDoc(window.statsDocRef, { totalSuccesses: window.fbIncrement(1) }, { merge: true });
+                window.completedMenus[activeMenu] = true;
             }
         }
     </script>
 
-    <!-- Firebase Script เชื่อมต่อส่วนกลาง ให้ทั้ง MS และ HS ใช้ร่วมกันได้ -->
+    <!-- =========================================================================
+         Firebase (โมดูลรวมศูนย์ ทำหน้าที่เป็นแกนหลัก)
+    ========================================================================= -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        let currentUser = null;
-        window.statsDocRef = null;
-
+        // สร้างตัวแปร Global ให้ React และ Vanilla JS เรียกใช้งาน
         window.fbGetDoc = getDoc;
         window.fbSetDoc = setDoc;
         window.fbUpdateDoc = updateDoc;
@@ -842,11 +868,12 @@
                 const app = initializeApp(customConfigObj);
                 const auth = getAuth(app);
                 const db = getFirestore(app);
-                window.fbDb = db; 
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'flowchart-app';
-                window.appId = appId;
                 
-                window.statsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'statistics', 'global');
+                window.fbDb = db; 
+                window.appId = typeof __app_id !== 'undefined' ? __app_id : 'flowchart-app';
+                
+                // เอกสารสำหรับเก็บสถิติรวมของฝั่ง ม.ต้น
+                window.statsDocRef = doc(db, 'artifacts', window.appId, 'public', 'data', 'statistics', 'global');
 
                 const initAuth = async () => {
                     try {
@@ -873,16 +900,10 @@
                 
                 initAuth();
 
+                // คอยฟังการอัปเดตข้อมูลของ ม.ต้น แล้วนำไปแสดงผลที่ Dashboard ครูของ ม.ต้น
                 onAuthStateChanged(auth, async (user) => {
                     if (!user) return;
-                    currentUser = user;
-
-                    if (!sessionStorage.getItem('visited')) {
-                        sessionStorage.setItem('visited', 'true');
-                        try { await updateDoc(window.statsDocRef, { totalVisits: increment(1) }); } 
-                        catch (e) { await setDoc(window.statsDocRef, { totalVisits: 1, totalSuccesses: 0 }, { merge: true }); }
-                    }
-
+                    
                     onSnapshot(window.statsDocRef, (docSnap) => {
                         if (docSnap.exists()) {
                             const data = docSnap.data();
@@ -894,14 +915,10 @@
                     });
                 });
 
-            } catch (e) {}
+            } catch (e) {
+                console.error("Firebase Initialization Error:", e);
+            }
         }
-
-        window.recordSuccess = async () => {
-            if (!currentUser || !window.statsDocRef) return;
-            try { await updateDoc(window.statsDocRef, { totalSuccesses: increment(1) }); } 
-            catch (e) { await setDoc(window.statsDocRef, { totalSuccesses: 1 }, { merge: true }); }
-        };
     </script>
 
 
@@ -989,8 +1006,9 @@
             return <div className="h-64 md:h-80 w-full"><canvas ref={chartRef}></canvas></div>;
         };
 
+        // หน้า Dashboard ครูสำหรับมัธยมปลาย
         const TeacherDashboardHS = ({ onBack, stats }) => {
-            if (!stats) return <div className="p-10 text-center">กำลังโหลดข้อมูลฐานข้อมูล...</div>;
+            if (!stats) return <div className="p-10 text-center text-slate-500">กำลังเชื่อมต่อฐานข้อมูล...</div>;
 
             const today = new Date().toISOString().split('T')[0];
             const todayVisits = stats.dailyVisits?.[today] || 0;
@@ -1063,33 +1081,23 @@
             const [activeTab, setActiveTab] = useState(0);
             const [formData, setFormData] = useState({ sleep: '', phone: '', study: '', exercise: '', mood: 5, stress: 5, subject: '' });
             const [hasSubmitted, setHasSubmitted] = useState(false);
-            const [showTeacherModal, setShowTeacherModal] = useState(false);
             const [showDashboard, setShowDashboard] = useState(false);
-            const [teacherUser, setTeacherUser] = useState('');
-            const [teacherPass, setTeacherPass] = useState('');
             const [hsStats, setHsStats] = useState(null);
+
+            // ใช้สำหรับให้ Modal ของ HTML ยิงมาสั่งเปลี่ยนหน้าเป็น Dashboard ของ ม.ปลาย
+            useEffect(() => {
+                window.triggerHSDashboard = () => setShowDashboard(true);
+            }, []);
 
             useEffect(() => {
                 const initFirebaseSync = async () => {
                     if (!window.fbDb) { setTimeout(initFirebaseSync, 500); return; }
                     
-                    const today = new Date().toISOString().split('T')[0];
                     const statsRef = window.fbDoc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'hs_statistics', 'global');
 
                     window.fbOnSnapshot(statsRef, (docSnap) => {
                         if (docSnap.exists()) { setHsStats(docSnap.data()); }
                     });
-
-                    if (!sessionStorage.getItem('hs_visited')) {
-                        sessionStorage.setItem('hs_visited', 'true');
-                        try {
-                            await window.fbUpdateDoc(statsRef, { [`dailyVisits.${today}`]: window.fbIncrement(1) });
-                        } catch (e) {
-                            await window.fbSetDoc(statsRef, {
-                                dailyVisits: { [today]: 1 }, dataSums: { sleep: 0, phone: 0, study: 0, exercise: 0, mood: 0, stress: 0 }, totalSubmissions: 0, subjects: {}
-                            }, { merge: true });
-                        }
-                    }
                 };
                 initFirebaseSync();
             }, []);
@@ -1100,24 +1108,22 @@
                 
                 const statsRef = window.fbDoc(window.fbDb, 'artifacts', window.appId, 'public', 'data', 'hs_statistics', 'global');
                 try {
-                    await window.fbUpdateDoc(statsRef, {
-                        'dataSums.sleep': window.fbIncrement(formData.sleep),
-                        'dataSums.phone': window.fbIncrement(formData.phone),
-                        'dataSums.study': window.fbIncrement(formData.study),
-                        'dataSums.exercise': window.fbIncrement(formData.exercise),
-                        'dataSums.mood': window.fbIncrement(formData.mood),
-                        'dataSums.stress': window.fbIncrement(formData.stress),
-                        'totalSubmissions': window.fbIncrement(1),
-                        [`subjects.${formData.subject}`]: window.fbIncrement(1)
-                    });
+                    await window.fbSetDoc(statsRef, {
+                        dataSums: {
+                            sleep: window.fbIncrement(formData.sleep),
+                            phone: window.fbIncrement(formData.phone),
+                            study: window.fbIncrement(formData.study),
+                            exercise: window.fbIncrement(formData.exercise),
+                            mood: window.fbIncrement(formData.mood),
+                            stress: window.fbIncrement(formData.stress)
+                        },
+                        totalSubmissions: window.fbIncrement(1),
+                        subjects: {
+                            [formData.subject]: window.fbIncrement(1)
+                        }
+                    }, { merge: true });
                     setHasSubmitted(true);
                 } catch(e) { console.error("Error saving student data", e); }
-            };
-
-            const handleTeacherLogin = () => {
-                if (teacherUser === 'staff' && teacherPass === '47000') {
-                    setShowTeacherModal(false); setShowDashboard(true); setTeacherUser(''); setTeacherPass('');
-                } else { alert('⚠️ ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง!'); }
             };
 
             const isDataComplete = () => {
@@ -1293,7 +1299,7 @@
                         <button onClick={() => window.showLevelSelection()} className="absolute top-4 left-4 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-xl font-bold transition backdrop-blur-sm flex items-center gap-2 shadow-sm text-sm">
                             <span>⬅️</span> กลับหน้าหลัก
                         </button>
-                        <button onClick={() => setShowTeacherModal(true)} className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-xl font-bold transition backdrop-blur-sm flex items-center gap-2 shadow-sm text-sm">
+                        <button onClick={() => window.showTeacherLogin()} className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-xl font-bold transition backdrop-blur-sm flex items-center gap-2 shadow-sm text-sm">
                             🔒 ระบบครูผู้สอน
                         </button>
 
@@ -1323,29 +1329,6 @@
                             </div>
                         </div>
                     </div>
-
-                    {showTeacherModal && (
-                        <div className="fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center backdrop-blur-sm">
-                            <div className="bg-white p-8 rounded-[2rem] max-w-sm w-full mx-4 shadow-2xl text-center border border-slate-100">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 text-slate-500 rounded-full mb-4 text-3xl">🔐</div>
-                                <h3 className="text-2xl font-bold text-slate-800 mb-6">เข้าสู่ระบบครูผู้สอน (ม.ปลาย)</h3>
-                                <div className="flex flex-col gap-5 text-left">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Username</label>
-                                        <input type="text" value={teacherUser} onChange={e => setTeacherUser(e.target.value)} className="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white" placeholder="ระบุชื่อผู้ใช้" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-600 mb-1.5 ml-1">Password</label>
-                                        <input type="password" value={teacherPass} onChange={e => setTeacherPass(e.target.value)} className="w-full border border-slate-300 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white" placeholder="ระบุรหัสผ่าน" />
-                                    </div>
-                                </div>
-                                <div className="mt-8 flex gap-3">
-                                    <button onClick={handleTeacherLogin} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold transition shadow-md">เข้าสู่ระบบ</button>
-                                    <button onClick={() => setShowTeacherModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-bold transition">ยกเลิก</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         };
